@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Angular
+frontend/.angular/
+frontend/dist/
+frontend/tmp/
+frontend/out-tsc/
+
+# IDEs
+.idea/
+.vscode/
+*.sublime-workspace
+.history/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Misc
+npm-debug.log
+yarn-error.log
+*.log

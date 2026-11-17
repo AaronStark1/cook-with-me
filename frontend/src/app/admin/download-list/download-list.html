@@ -1,0 +1,48 @@
+<div class="container-fluid p-4">
+
+  <h2 class="fw-bold text-warning text-center mb-4">
+    Downloaded Recipe List
+  </h2>
+
+  <div class="card shadow rounded-4 border-0 p-3">
+
+    <div class="table-responsive">
+
+      <table class="table align-middle">
+
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Recipe ID</th>
+            <th>Recipe Name</th>
+            <th>Cuisine</th>
+            <th class="text-center">Downloads</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr *ngFor="let item of downloadList; let i = index">
+
+            <td>{{ i + 1 }}</td>
+            <td>{{ item.recipeId }}</td>
+            <td class="fw-semibold">{{ item.name }}</td>
+            <td>{{ item.cuisine }}</td>
+
+            <td class="text-center">
+              <span class="badge bg-success px-3 py-2 rounded-pill">
+                {{ item.count }}
+              </span>
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>

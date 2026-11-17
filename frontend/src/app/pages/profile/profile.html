@@ -1,0 +1,95 @@
+<div class="container my-5">
+
+  <div class="row g-5">
+
+    <!-- LEFT SIDE - PROFILE -->
+    <div class="col-md-6">
+      <div class="card shadow border-0 rounded-4 p-4 text-center">
+
+        <h3 class="fw-bold mb-4">Update Profile</h3>
+
+        <!-- Avatar -->
+        <div class="mb-4">
+          <div class="avatar-circle mx-auto">
+            <i class="bi bi-person-fill"></i>
+          </div>
+        </div>
+
+        <form [formGroup]="profileForm" (ngSubmit)="updateProfile()">
+
+          <input
+            type="text"
+            class="form-control mb-3 rounded-pill"
+            placeholder="Enter Name"
+            formControlName="username"
+          />
+
+          <input
+            type="email"
+            class="form-control mb-4 rounded-pill"
+            placeholder="Enter Email"
+            formControlName="email"
+          />
+
+          <div class="d-flex justify-content-center gap-3">
+
+            <button class="btn btn-success rounded-pill px-4">
+              Update Profile
+            </button>
+
+            <button type="button"
+              class="btn btn-outline-secondary rounded-pill px-4">
+              Cancel
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE - DOWNLOAD LIST -->
+    <div class="col-md-6">
+      <div class="card shadow border-0 rounded-4 p-4">
+
+        <h3 class="fw-bold text-center mb-4">
+          Downloaded Recipe List
+        </h3>
+
+        <div class="row g-4">
+
+          <div class="col-md-6"
+            *ngFor="let recipe of downloadedRecipes">
+
+            <div class="card shadow-sm border-0 rounded-4 text-center p-3">
+
+              <img
+                [src]="recipe.image"
+                class="img-fluid rounded-3 mb-3"
+                style="height:150px; object-fit:cover"
+              />
+
+              <h6 class="fw-semibold">
+                {{ recipe.name }}
+              </h6>
+
+              <button
+                class="btn btn-danger btn-sm rounded-pill px-3 mt-2"
+                (click)="deleteDownloadedRecipe(recipe._id)"
+              >
+                Delete
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>

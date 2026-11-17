@@ -1,0 +1,44 @@
+<div class="auth-wrapper">
+
+  <div class="auth-card">
+
+    <h2 class="mb-4">Register here...</h2>
+
+    <form [formGroup]="registerForm" (ngSubmit)="submit()">
+
+      <input
+        type="text"
+        class="form-control mb-3"
+        placeholder="Username"
+        formControlName="username"
+      />
+
+      <input
+        type="email"
+        class="form-control mb-3"
+        placeholder="Email"
+        formControlName="email"
+      />
+
+      <input
+        type="password"
+        class="form-control mb-3"
+        placeholder="Password"
+        formControlName="password"
+      />
+
+      <button type="submit" class="btn btn-success px-4">
+        Register
+      </button>
+
+    </form>
+
+    <p class="mt-3 small">
+      Already have an account?
+      <a routerLink="/login" class="fw-semibold">
+        Login Now
+      </a>
+    </p>
+
+  </div>
+</div>

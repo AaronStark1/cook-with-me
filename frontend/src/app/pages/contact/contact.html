@@ -1,0 +1,92 @@
+<!-- HERO -->
+<div class="bg-warning text-white text-center py-5">
+  <h1 class="fw-bold">Contact Us</h1>
+  <p class="mt-2 small px-5">
+    Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptates rerum,
+    at accusantium magnam error tempore voluptatum architecto praesentium
+    commodi excepturi molestias, ex esse eius doloremque sapiente molestiae
+    vitae. Ab, nulla.
+  </p>
+</div>
+
+<!-- CONTENT -->
+<div class="container my-5">
+  <div class="row g-4">
+
+    <!-- LEFT INFO -->
+    <div class="col-md-6">
+      <div class="bg-white p-4 rounded-4 shadow-sm h-100">
+        <h5 class="fw-bold mb-3">Get In Touch</h5>
+        <p class="small text-muted">
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Nisi quasi
+          odio aperiam! Quasi eius expedita, voluptatibus dolorem corrupti
+          accusantium non perferendis rem eligendi.
+        </p>
+
+        <p class="mb-1 fw-semibold">Address</p>
+        <p class="small text-muted">NYC 4567, PO Berlin.</p>
+
+        <p class="mb-1 fw-semibold">Email</p>
+        <p class="small text-muted">cookwithme@gmail.com</p>
+
+        <p class="mb-1 fw-semibold">Phone</p>
+        <p class="small text-muted">989898989</p>
+      </div>
+    </div>
+
+    <!-- RIGHT FORM -->
+    <div class="col-md-6">
+      <div class="bg-white p-4 rounded-4 shadow-sm h-100">
+        <h5 class="fw-bold mb-3">Client Testimony</h5>
+
+        <form (ngSubmit)="addTestimony()">
+          <input
+            type="text"
+            [(ngModel)]="testimonyData.username"
+            name="username"
+            class="form-control mb-3"
+            placeholder="Username"
+          />
+
+          <input
+            type="email"
+            [(ngModel)]="testimonyData.email"
+            name="email"
+            class="form-control mb-3"
+            placeholder="Email"
+          />
+
+          <textarea
+            rows="4"
+            [(ngModel)]="testimonyData.message"
+            name="message"
+            class="form-control mb-3"
+            placeholder="Message"
+          ></textarea>
+
+            <input
+            type="text"
+            [(ngModel)]="testimonyData.profession"
+            name="profession"
+            class="form-control mb-3"
+            placeholder="Profession"
+          />
+          
+          <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" />
+            <label class="form-check-label small">
+              By Submitting, your agreeing the terms and condition of our
+              website.
+            </label>
+          </div>
+
+          <button class="btn btn-success px-4">
+            Submit
+          </button>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>

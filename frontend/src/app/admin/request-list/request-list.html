@@ -1,0 +1,88 @@
+<div class="container-fluid py-4">
+
+  <h2 class="fw-bold text-warning text-center mb-4">
+    All Testimony List
+  </h2>
+
+  <div class="card shadow rounded-4 border-0 p-3">
+
+    <div class="table-responsive">
+
+      <table class="table align-middle">
+
+        <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Message</th>
+            <th class="text-center">Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+
+          <tr *ngFor="let item of testimonyList; let i = index">
+
+            <td>{{ i + 1 }}</td>
+
+            <td class="fw-semibold">
+              {{ item.username }}
+            </td>
+
+            <td>
+              {{ item.email }}
+            </td>
+
+            <td>
+              {{ item.message }}
+            </td>
+
+            <td class="text-center">
+
+              <!-- Pending -->
+              <ng-container *ngIf="!item.status || item.status === 'Pending'">
+                <button
+                  class="btn btn-outline-success btn-sm me-2"
+                  (click)="approveTestimony(item._id)"
+                >
+                  ✓
+                </button>
+
+                <button
+                  class="btn btn-outline-danger btn-sm"
+                  (click)="rejectTestimony(item._id)"
+                >
+                  ✕
+                </button>
+              </ng-container>
+
+              <!-- Approved -->
+              <span
+                *ngIf="item.status === 'Approved'"
+                class="badge bg-success px-3 py-2 rounded-pill"
+              >
+                Approved
+              </span>
+
+              <!-- Rejected -->
+              <span
+                *ngIf="item.status === 'Rejected'"
+                class="badge bg-danger px-3 py-2 rounded-pill"
+              >
+                Rejected
+              </span>
+
+            </td>
+
+          </tr>
+
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </div>
+
+</div>

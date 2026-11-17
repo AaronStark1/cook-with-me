@@ -1,0 +1,51 @@
+<div class="container-fluid py-4">
+
+  <h2 class="fw-bold text-warning text-center mb-4">
+    All Users List
+  </h2>
+
+  <div class="card shadow rounded-4 p-4 border-0">
+
+    <table class="table align-middle">
+
+      <thead>
+        <tr class="text-muted">
+          <th>#</th>
+          <th>Profile</th>
+          <th>Name</th>
+          <th>Email</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        <tr *ngFor="let user of users; let i = index">
+
+          <td>{{ i + 1 }}</td>
+
+          <td>
+            <img
+              src="https://cdn-icons-png.flaticon.com/512/3177/3177440.png"
+              width="50"
+              height="50"
+              class="rounded-circle object-fit-cover"
+            />
+          </td>
+
+          <td class="fw-semibold">
+            {{ user.username }}
+          </td>
+
+          <td>
+            {{ user.email }}
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

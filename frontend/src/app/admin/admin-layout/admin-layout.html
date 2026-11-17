@@ -1,0 +1,57 @@
+<div class="d-flex min-vh-100">
+
+  <!-- SIDEBAR -->
+  <aside class="bg-warning text-dark p-3" style="width: 260px;">
+    <div class="text-center mb-4">
+      <div class="bg-light rounded-4 p-3">
+        <i class="bi bi-person-circle fs-1"></i>
+        <h6 class="mt-2 fw-bold">Admin Panel</h6>
+        <small>CookWithMe</small>
+      </div>
+    </div>
+
+    <ul class="nav flex-column gap-2">
+      <li class="nav-item">
+        <a routerLink="/admin" class="nav-link text-dark fw-semibold">
+          <i class="bi bi-speedometer2 me-2"></i> Dashboard
+        </a>
+      </li>
+      <li class="nav-item">
+<a
+  routerLink="/admin/recipelist"
+  class="nav-link text-dark fw-semibold"
+>
+  <i class="bi bi-egg-fried me-2"></i> Recipes
+</a>
+
+      </li>
+      <li class="nav-item">
+        <a
+        routerLink="/admin/userslist"
+        class="nav-link text-dark">
+          <i class="bi bi-people me-2"></i> Users
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+        routerLink="/admin/downloadlist"
+         class="nav-link text-dark">
+          <i class="bi bi-download me-2"></i> Downloads
+        </a>
+      </li>
+      <li class="nav-item">
+        <a
+        routerLink="/admin/requestlist"
+         class="nav-link text-dark">
+          <i class="bi bi-inbox me-2"></i> Requests
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="flex-grow-1 p-4 bg-light">
+    <router-outlet></router-outlet>
+  </main>
+
+</div>

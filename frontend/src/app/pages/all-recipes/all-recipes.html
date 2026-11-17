@@ -1,0 +1,67 @@
+<div class="container my-5">
+
+  <!-- TOP BAR -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-warning">All Recipes</h2>
+
+    <input [(ngModel)]="searchKey" type="text" class="form-control w-25 rounded-pill px-4" placeholder="Search recipes..." />
+  </div>
+
+  <div class="row">
+
+    <!-- FILTERS -->
+    <div class="col-md-3">
+      <div class="bg-white shadow-sm rounded-4 p-3">
+
+        <h6 class="fw-semibold mb-3">FILTERS</h6>
+
+        <button class="btn btn-light w-100 text-start mb-2 fw-semibold">
+          All Recipes
+        </button>
+        <div class="dropdown mb-2">
+
+          <button class="btn btn-light w-100 text-start dropdown-toggle" data-bs-toggle="dropdown">
+            Cuisine Type
+          </button>
+
+          <ul class="dropdown-menu w-100">
+
+            <li *ngFor="let item of cuisineType">
+              <button class="dropdown-item" (click)="filterRecipe('cuisine', item)">
+                {{ item }}
+              </button>
+            </li>
+
+          </ul>
+
+        </div>
+
+        <button class="btn btn-light w-100 text-start">
+          Meal Type <i class="bi bi-chevron-down float-end"></i>
+        </button>
+
+      </div>
+    </div>
+
+    <!-- RECIPES GRID -->
+    <div class="col-md-9">
+      <div class="row g-4">
+
+        <!-- CARD -->
+        <div class="col-md-6 col-lg-4" *ngFor="let recipe of recipes | search:searchKey"
+>
+          <div class="card h-100 shadow-sm border-0 rounded-4 recipe-card" (click)="viewRecipe(recipe._id)"
+            style="cursor:pointer">
+
+            <img [src]="recipe.image" class="card-img-top rounded-top-4" />
+            <div class="card-body text-center">
+              <h6 class="fw-semibold">{{ recipe.name }}</h6>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

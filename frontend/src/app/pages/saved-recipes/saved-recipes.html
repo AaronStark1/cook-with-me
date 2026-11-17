@@ -1,0 +1,36 @@
+<div class="container my-5">
+
+  <h3 class="fw-bold text-center mb-4">Your Collections</h3>
+
+  <div class="row justify-content-start g-4">
+
+    <div
+      class="col-md-4 col-lg-3"
+      *ngFor="let recipe of savedRecipes"
+    >
+      <div class="card h-100 shadow-sm border-0 rounded-4 position-relative">
+
+        <img
+          [src]="recipe.image"
+          class="card-img-top rounded-top-4"
+        />
+
+        <!-- DELETE ICON -->
+        <button
+          class="btn btn-danger btn-sm position-absolute bottom-0 end-0 m-2"
+          (click)="removeRecipe(recipe._id)"
+        >
+          <i class="bi bi-trash"></i>
+        </button>
+
+        <div class="card-body">
+          <h6 class="fw-semibold mb-0">
+            {{ recipe.name }}
+          </h6>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>

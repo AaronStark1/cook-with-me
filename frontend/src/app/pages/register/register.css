@@ -1,0 +1,16 @@
+.auth-wrapper {
+  min-height: 100vh;
+  background: url('https://wallpapers.com/images/hd/food-4k-1pf6px6ryqfjtnyr.jpg') center/cover no-repeat;
+  display: flex;
+  align-items: center;
+  padding-left: 8%;
+}
+
+.auth-card {
+  width: 420px;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+}
