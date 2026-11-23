@@ -1,70 +1,70 @@
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Apiservice } from '../../services/apiservice';
+import { AuthService } from '../../services/auth';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './login.html',
-  styleUrl: './login.css'
+  styleUrls: ['../auth/auth.css', './login.css']
 })
 export class Login {
-  token: any = ""
-  userDetails: any = {}
   loginForm: FormGroup;
+  submitted = false;
+  loading = false;
+  errorMessage = '';
+  justRegistered = false;
 
   constructor(
     private fb: FormBuilder,
     private api: Apiservice,
-    private router: Router
+    private auth: AuthService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required]]
     });
+    this.justRegistered = this.route.snapshot.queryParamMap.get('registered') === '1';
+  }
+
+  get f() {
+    return this.loginForm.controls;
   }
 
   login() {
+    this.submitted = true;
+    this.errorMessage = '';
 
     if (this.loginForm.invalid) {
-      alert('Please enter valid credentials');
       return;
     }
 
+    this.loading = true;
     this.api.loginAPI(this.loginForm.value).subscribe({
-
       next: (res: any) => {
-        console.log(res);
-
-        this.token = res.token;
-        this.userDetails = res.user;
-
-        // Store in sessionStorage (as you were using)
-        sessionStorage.setItem('token', this.token);
-        sessionStorage.setItem(
-          'userDetails',
-          JSON.stringify(this.userDetails)
-        );
-
-        alert('Login successful');
-        if (res.user.role=="admin") {
-          this.router.navigateByUrl("/admin")
-        } else {
-          this.router.navigateByUrl('/');
-        }
-        
-
-
+        // AuthService persists only { username, email, role } — never the raw response.
+        this.auth.setSession(res.token, res.user);
+        this.router.navigateByUrl(this.targetUrl());
       },
-
       error: (err) => {
-        console.log(err);
-        alert(err?.error?.message || 'Login failed');
+        this.loading = false;
+        this.errorMessage = err?.error?.message || 'Login failed. Please try again.';
       }
-
     });
   }
 
+  /** Where to go after login: the page that sent us here, or a sensible default for the role. */
+  private targetUrl(): string {
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    const safe = !!returnUrl && returnUrl.startsWith('/') && !returnUrl.startsWith('//') && !returnUrl.startsWith('/login');
+    if (safe && (!returnUrl!.startsWith('/admin') || this.auth.isAdmin())) {
+      return returnUrl!;
+    }
+    return this.auth.isAdmin() ? '/admin' : '/';
+  }
 }

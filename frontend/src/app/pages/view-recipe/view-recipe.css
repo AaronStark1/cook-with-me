@@ -1,0 +1,241 @@
+:host {
+  display: block;
+}
+
+.article-state {
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+}
+
+/* ---- Feature head (paper) ---- */
+.feature {
+  padding-top: clamp(1.25rem, 3vw, 2rem);
+}
+
+.feature__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  margin-bottom: clamp(1rem, 3vw, 2rem);
+  text-decoration: none;
+}
+
+.feature__back:hover {
+  text-decoration: underline;
+}
+
+.feature__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .feature__grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  }
+}
+
+.feature__title {
+  margin: 0 0 clamp(1.5rem, 3vw, 2.25rem);
+  font-size: clamp(2rem, 4.2vw, 4rem);
+  line-height: 1;
+  overflow-wrap: break-word;
+}
+
+/* ---- Key facts: oversized numerals separated by solid rules ---- */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.25rem, 1fr));
+  margin: 0 0 clamp(1.5rem, 3vw, 2rem);
+  padding: 0;
+  border-top: var(--rule) solid var(--ink);
+  border-bottom: var(--rule) solid var(--ink);
+}
+
+.fact {
+  min-width: 0;
+  margin: 0;
+  padding: 0.9rem 1rem 0.8rem;
+  border-left: 1px solid color-mix(in srgb, var(--ink) 45%, transparent);
+}
+
+.fact:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.fact dt {
+  margin: 0 0 0.45rem;
+  color: var(--muted);
+}
+
+.fact dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.4rem;
+  margin: 0;
+}
+
+.fact .numeral {
+  font-size: clamp(2rem, 3.2vw, 2.75rem);
+}
+
+.fact__unit {
+  line-height: 1.5;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.fact__word {
+  font-size: clamp(1.15rem, 2.2vw, 1.6rem);
+  line-height: 1.1;
+}
+
+
+.feature__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.feature__actions .btn-cwm {
+  flex: 1 1 11rem;
+}
+
+.feature__hint {
+  margin: 1rem 0 0;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+}
+
+.feature .alert {
+  margin: 1rem 0 0;
+}
+
+.feature__photo .photo {
+  --ar: 1 / 1;
+}
+
+@media (min-width: 992px) {
+  .feature__photo {
+    position: sticky;
+    top: calc(var(--header-h) + 1.5rem);
+    padding: 0 10px 10px 0; /* room for the hard offset shadow */
+  }
+}
+
+@media (max-width: 991.98px) {
+  .feature__photo {
+    padding: 0 10px 10px 0;
+  }
+}
+
+/* ---- Ingredients + method (cream) ---- */
+.method__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .method__grid {
+    grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.6fr);
+  }
+}
+
+.ingredients {
+  padding: clamp(1.25rem, 3vw, 2rem);
+  background: var(--broth);
+  color: var(--ink);
+  border-top: 8px solid var(--yolk);
+}
+
+@media (min-width: 992px) {
+  .ingredients {
+    position: sticky;
+    top: calc(var(--header-h) + 1.5rem);
+  }
+}
+
+.ingredients h2 {
+  margin-bottom: 1.25rem;
+  font-size: clamp(1.4rem, 2.1vw, 1.9rem);
+  overflow-wrap: anywhere;
+}
+
+.ingredients ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ingredients li {
+  position: relative;
+  padding: 0.7rem 0 0.7rem 1.6rem;
+  font-weight: 600;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+}
+
+/* square bullet */
+.ingredients li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1.2rem;
+  width: 0.65rem;
+  height: 0.65rem;
+  background: var(--yolk);
+}
+
+.steps h2 {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: var(--rule) solid var(--broth);
+}
+
+.steps ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps li {
+  display: grid;
+  grid-template-columns: clamp(3.75rem, 9vw, 6rem) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--broth) 30%, transparent);
+}
+
+.steps__n {
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  color: var(--paper); /* red numerals on cream: 5.07:1, large display text */
+}
+
+.steps p {
+  margin: 0.3rem 0 0;
+  max-width: 44rem;
+  font-size: clamp(1.05rem, 1.5vw, 1.2rem);
+  line-height: 1.55;
+}
+
+/* ---- Related ---- */
+.related__title {
+  margin-bottom: clamp(1.75rem, 4vw, 3rem);
+}
+
+.related__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
+  gap: clamp(1.75rem, 3vw, 2.5rem) clamp(1rem, 2vw, 1.75rem);
+  margin: 0;
+  padding: 0 0.6rem 0.6rem 0;
+  list-style: none;
+}

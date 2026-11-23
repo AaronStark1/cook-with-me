@@ -1,241 +1,313 @@
-<div class="container-fluid py-4">
+<header class="page-head">
+  <div>
+    <p class="kicker">Recipes</p>
+    <!-- Dynamic Title -->
+    <h1>{{ recipeId ? 'Edit Recipe Details' : 'Add Recipe Details' }}</h1>
+  </div>
+  <a class="btn-cwm btn-cwm--ink" routerLink="/admin/recipelist">
+    <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to recipes
+  </a>
+</header>
 
-  <!-- Dynamic Title -->
-  <h2 class="fw-bold text-warning text-center mb-4">
-    {{ recipeId ? 'Edit Recipe Details' : 'Add Recipe Details' }}
-  </h2>
+<form [formGroup]="form" (ngSubmit)="save()" novalidate class="recipe-form">
 
-  <div class="card shadow rounded-4 border-0 p-4">
+  @if (errorMessages.length) {
+    <div class="alert alert-danger" role="alert">
+      @for (message of errorMessages; track $index) {
+        <div>{{ message }}</div>
+      }
+    </div>
+  }
 
-    <div class="row g-3">
+  @if (loadingRecipe) {
+    <div class="state" role="status">
+      <span class="loader" aria-hidden="true"></span>
+      <p class="state__text">Loading recipe…</p>
+    </div>
+  }
 
-      <!-- BASIC DETAILS -->
+  <!-- BASIC DETAILS -->
+  <fieldset class="form-section">
+    <legend>Basics</legend>
 
-      <div class="col-md-6">
+    <div class="fields">
+
+      <div class="field field--wide">
+        <label for="name" class="form-label">Recipe Name</label>
         <input
-          [(ngModel)]="recipeDetails.name"
-          name="name"
+          id="name"
+          formControlName="name"
           type="text"
           class="form-control"
+          [class.is-invalid]="submitted && f['name'].invalid"
           placeholder="Recipe Name"
         />
+        <div class="invalid-feedback">Recipe name is required.</div>
       </div>
 
-      <div class="col-md-6">
+      <div class="field">
+        <label for="cookTimeMinutes" class="form-label">Cooking Time (minutes)</label>
         <input
-          [(ngModel)]="recipeDetails.cookTimeMinutes"
-          name="cookTimeMinutes"
+          id="cookTimeMinutes"
+          formControlName="cookTimeMinutes"
           type="number"
+          min="0"
           class="form-control"
+          [class.is-invalid]="submitted && f['cookTimeMinutes'].invalid"
           placeholder="Cooking Time (minutes)"
         />
+        <div class="invalid-feedback">Enter a cooking time of 0 or more.</div>
       </div>
 
-      <div class="col-md-6">
+      <div class="field">
+        <label for="prepTimeMinutes" class="form-label">Preparation Time (minutes)</label>
         <input
-          [(ngModel)]="recipeDetails.prepTimeMinutes"
-          name="prepTimeMinutes"
+          id="prepTimeMinutes"
+          formControlName="prepTimeMinutes"
           type="number"
+          min="0"
           class="form-control"
+          [class.is-invalid]="submitted && f['prepTimeMinutes'].invalid"
           placeholder="Preparation Time (minutes)"
         />
+        <div class="invalid-feedback">Enter a preparation time of 0 or more.</div>
       </div>
 
-      <div class="col-md-6">
+      <div class="field">
+        <label for="servings" class="form-label">Servings</label>
         <input
-          [(ngModel)]="recipeDetails.servings"
-          name="servings"
+          id="servings"
+          formControlName="servings"
           type="number"
+          min="1"
           class="form-control"
+          [class.is-invalid]="submitted && f['servings'].invalid"
           placeholder="Servings"
         />
+        <div class="invalid-feedback">Servings must be at least 1.</div>
       </div>
 
-      <div class="col-md-6">
-        <select
-          [(ngModel)]="recipeDetails.cuisine"
-          name="cuisine"
-          class="form-select"
-        >
-          <option value="" hidden>Select Cuisine</option>
-          <option *ngFor="let item of cuisineArray" [value]="item">
-            {{ item }}
-          </option>
-        </select>
-      </div>
-
-      <div class="col-md-6">
-        <select
-          [(ngModel)]="recipeDetails.difficulty"
-          name="difficulty"
-          class="form-select"
-        >
-          <option value="" hidden>Select Difficulty</option>
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
-      </div>
-
-      <div class="col-md-6">
+      <div class="field">
+        <label for="caloriesPerServing" class="form-label">Calories Per Serving</label>
         <input
-          [(ngModel)]="recipeDetails.image"
-          name="image"
-          type="text"
-          class="form-control"
-          placeholder="Recipe Image URL"
-        />
-      </div>
-
-      <div class="col-md-6">
-        <input
-          [(ngModel)]="recipeDetails.caloriesPerServing"
-          name="caloriesPerServing"
+          id="caloriesPerServing"
+          formControlName="caloriesPerServing"
           type="number"
+          min="0"
           class="form-control"
+          [class.is-invalid]="submitted && f['caloriesPerServing'].invalid"
           placeholder="Calories Per Serving"
         />
+        <div class="invalid-feedback">Enter calories of 0 or more.</div>
       </div>
 
-      <!-- INGREDIENTS SECTION -->
-
-      <div class="col-12 mt-4">
-        <label class="fw-semibold mb-2 text-warning">Ingredients</label>
-
-        <div class="d-flex">
-          <textarea
-            #ingredients
-            class="form-control"
-            rows="3"
-            placeholder="Add ingredient"
-          ></textarea>
-
-          <button
-            (click)="addIngredients(ingredients)"
-            class="btn btn-warning ms-2 px-3"
-          >
-            +
-          </button>
-        </div>
-
-        <div class="mt-3">
-          <div
-            *ngFor="let item of ingredientsArray; let i = index"
-            class="d-inline-block bg-light border rounded-pill px-3 py-1 m-1"
-          >
-            {{ item }}
-            <button
-              class="btn btn-sm text-danger ms-2"
-              (click)="deleteIngredients(i)"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
+      <div class="field">
+        <label for="cuisine" class="form-label">Cuisine</label>
+        <input
+          id="cuisine"
+          formControlName="cuisine"
+          type="text"
+          list="cuisineOptions"
+          class="form-control"
+          [class.is-invalid]="submitted && f['cuisine'].invalid"
+          placeholder="Pick an existing cuisine or type a new one"
+          autocomplete="off"
+        />
+        <datalist id="cuisineOptions">
+          @for (item of cuisineSuggestions; track item) {
+            <option [value]="item"></option>
+          }
+        </datalist>
+        <div class="invalid-feedback">Cuisine is required.</div>
       </div>
 
-      <!-- INSTRUCTIONS SECTION -->
-
-      <div class="col-12 mt-4">
-        <label class="fw-semibold mb-2 text-warning">
-          Cooking Instructions
-        </label>
-
-        <div class="d-flex">
-          <textarea
-            #instructions
-            class="form-control"
-            rows="3"
-            placeholder="Add cooking step"
-          ></textarea>
-
-          <button
-            (click)="addInstructions(instructions)"
-            class="btn btn-warning ms-2 px-3"
-          >
-            +
-          </button>
-        </div>
-
-        <div class="mt-3">
-          <div
-            *ngFor="let item of instructionsArray; let i = index"
-            class="d-inline-block bg-light border rounded-pill px-3 py-1 m-1"
-          >
-            {{ item }}
-            <button
-              class="btn btn-sm text-danger ms-2"
-              (click)="deleteInstructions(i)"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- MEAL TYPE SECTION -->
-
-      <div class="col-12 mt-4">
-        <label class="fw-semibold mb-2 text-warning">
-          Meal Type
-        </label>
-
-        <div class="d-flex">
-          <input
-            #mealInput
-            type="text"
-            class="form-control"
-            placeholder="Add Meal Type (Breakfast, Lunch, Dinner...)"
-          />
-
-          <button
-            (click)="addMeal(mealInput)"
-            class="btn btn-warning ms-2 px-3"
-          >
-            +
-          </button>
-        </div>
-
-        <div class="mt-3">
-          <div
-            *ngFor="let item of mealTypeArray"
-            class="d-inline-block bg-warning text-white rounded-pill px-3 py-1 m-1"
-          >
-            {{ item }}
-            <button
-              class="btn btn-sm text-white ms-2"
-              (click)="removeMeal(item)"
-            >
-              ✕
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ACTION BUTTON -->
-
-      <div class="col-12 text-center mt-5">
-
-        <button
-          *ngIf="!recipeId"
-          (click)="addRecipe()"
-          class="btn btn-warning px-5 rounded-pill"
+      <div class="field">
+        <label for="difficulty" class="form-label">Difficulty</label>
+        <select
+          id="difficulty"
+          formControlName="difficulty"
+          class="form-select"
+          [class.is-invalid]="submitted && f['difficulty'].invalid"
         >
-          Add Recipe
-        </button>
+          <option value="" disabled>Select Difficulty</option>
+          @for (level of difficulties; track level) {
+            <option [value]="level">{{ level }}</option>
+          }
+        </select>
+        <div class="invalid-feedback">Please select a difficulty.</div>
+      </div>
 
-        <button
-          *ngIf="recipeId"
-          (click)="editRecipe()"
-          class="btn btn-warning px-5 rounded-pill"
-        >
-          Update Recipe
-        </button>
-
+      <div class="field field--wide">
+        <label for="image" class="form-label">Recipe Image URL</label>
+        <input
+          id="image"
+          formControlName="image"
+          type="text"
+          class="form-control"
+          [class.is-invalid]="submitted && f['image'].invalid"
+          placeholder="Recipe Image URL"
+        />
+        <div class="invalid-feedback">An image URL is required.</div>
       </div>
 
     </div>
+  </fieldset>
 
+  <!-- INGREDIENTS SECTION -->
+  <fieldset class="form-section">
+    <legend>Ingredients</legend>
+
+    <div class="adder">
+      <div class="adder__field">
+        <label for="ingredientInput" class="form-label">Add an ingredient</label>
+        <textarea
+          id="ingredientInput"
+          #ingredients
+          class="form-control"
+          [class.is-invalid]="submitted && !ingredientsArray.length"
+          rows="2"
+          placeholder="Add ingredient"
+        ></textarea>
+        <div class="invalid-feedback">Add at least one ingredient.</div>
+      </div>
+
+      <button
+        type="button"
+        (click)="addIngredients(ingredients)"
+        class="btn-cwm adder__btn"
+        aria-label="Add ingredient"
+      >
+        <i class="bi bi-plus-lg" aria-hidden="true"></i> Add
+      </button>
+    </div>
+
+    @if (ingredientsArray.length) {
+      <ul class="items" aria-label="Ingredients added">
+        @for (item of ingredientsArray; track $index; let i = $index) {
+          <li class="item">
+            <span class="item__text">{{ item }}</span>
+            <button
+              type="button"
+              class="btn-cwm btn-cwm--ink btn-cwm--sm"
+              (click)="deleteIngredients(i)"
+              [attr.aria-label]="'Remove ingredient ' + item"
+            >
+              <i class="bi bi-x-lg" aria-hidden="true"></i> Remove
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </fieldset>
+
+  <!-- INSTRUCTIONS SECTION -->
+  <fieldset class="form-section">
+    <legend>Cooking Instructions</legend>
+
+    <div class="adder">
+      <div class="adder__field">
+        <label for="instructionInput" class="form-label">Add a step</label>
+        <textarea
+          id="instructionInput"
+          #instructions
+          class="form-control"
+          [class.is-invalid]="submitted && !instructionsArray.length"
+          rows="2"
+          placeholder="Add cooking step"
+        ></textarea>
+        <div class="invalid-feedback">Add at least one cooking step.</div>
+      </div>
+
+      <button
+        type="button"
+        (click)="addInstructions(instructions)"
+        class="btn-cwm adder__btn"
+        aria-label="Add cooking step"
+      >
+        <i class="bi bi-plus-lg" aria-hidden="true"></i> Add
+      </button>
+    </div>
+
+    @if (instructionsArray.length) {
+      <ol class="items items--numbered" aria-label="Cooking steps added">
+        @for (item of instructionsArray; track $index; let i = $index) {
+          <li class="item">
+            <span class="item__n numeral" aria-hidden="true">{{ i + 1 }}</span>
+            <span class="item__text">{{ item }}</span>
+            <button
+              type="button"
+              class="btn-cwm btn-cwm--ink btn-cwm--sm"
+              (click)="deleteInstructions(i)"
+              [attr.aria-label]="'Remove step ' + (i + 1)"
+            >
+              <i class="bi bi-x-lg" aria-hidden="true"></i> Remove
+            </button>
+          </li>
+        }
+      </ol>
+    }
+  </fieldset>
+
+  <!-- MEAL TYPE SECTION -->
+  <fieldset class="form-section">
+    <legend>Meal Type</legend>
+
+    <div class="adder">
+      <div class="adder__field">
+        <label for="mealInput" class="form-label">Add a meal type</label>
+        <input
+          id="mealInput"
+          #mealInput
+          type="text"
+          class="form-control"
+          [class.is-invalid]="submitted && !mealTypeArray.length"
+          placeholder="Add Meal Type (Breakfast, Lunch, Dinner...)"
+        />
+        <div class="invalid-feedback">Add at least one meal type.</div>
+      </div>
+
+      <button
+        type="button"
+        (click)="addMeal(mealInput)"
+        class="btn-cwm adder__btn"
+        aria-label="Add meal type"
+      >
+        <i class="bi bi-plus-lg" aria-hidden="true"></i> Add
+      </button>
+    </div>
+
+    @if (mealTypeArray.length) {
+      <ul class="chips" aria-label="Meal types added">
+        @for (item of mealTypeArray; track item) {
+          <li class="chip">
+            <span>{{ item }}</span>
+            <button
+              type="button"
+              (click)="removeMeal(item)"
+              [attr.aria-label]="'Remove meal type ' + item"
+            >
+              <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </fieldset>
+
+  <!-- ACTION BUTTON -->
+  <div class="actions">
+    <button
+      type="submit"
+      class="btn-cwm btn-cwm--broth"
+      [disabled]="saving || loadingRecipe"
+    >
+      @if (saving) {
+        Saving…
+      } @else {
+        {{ recipeId ? 'Update Recipe' : 'Add Recipe' }}
+      }
+    </button>
+    <a class="btn-cwm btn-cwm--ghost" routerLink="/admin/recipelist">Cancel</a>
   </div>
 
-</div>
+</form>

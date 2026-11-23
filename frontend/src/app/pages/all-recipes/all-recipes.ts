@@ -1,62 +1,78 @@
-import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
-import { Apiservice } from '../../services/apiservice';
-import { Router } from '@angular/router';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Apiservice } from '../../services/apiservice';
 import { SearchPipe } from '../../pipes/search-pipe';
+import { RecipeTile } from '../../components/recipe-tile/recipe-tile';
+
 @Component({
   selector: 'app-all-recipes',
-  imports: [CommonModule, FormsModule,SearchPipe],
+  imports: [FormsModule, SearchPipe, RecipeTile],
   templateUrl: './all-recipes.html',
   styleUrl: './all-recipes.css',
 })
-export class AllRecipes {
-  recipes: any = []
-  cuisineType: any = [] //to hold all the cuisines
-  dummyRecipe: any = []
-  nestedMealArray: any=[]
-  singleMealArray:any=[]
-  updatedMealArray:any=[]
-  searchKey:string=''
-  constructor(private api: Apiservice,private router: Router) { }
+export class AllRecipes implements OnInit {
+  allRecipes: any[] = []        // everything returned by the API
+  recipes: any[] = []           // after the cuisine / meal-type filters
+  cuisineType: string[] = []
+  mealTypes: string[] = []
+  selectedCuisine: string | null = null
+  selectedMeal: string | null = null
+  searchKey: string = ''
+  loading = true
+  errorMessage = ''
+
+  constructor(private api: Apiservice) { }
+
   ngOnInit(): void {
     this.getRecipe()
   }
+
   getRecipe() {
+    this.loading = true
+    this.errorMessage = ''
     this.api.getRecipeAPI().subscribe({
       next: (res: any) => {
-        console.log(res);
-        this.recipes = res.response
-        this.dummyRecipe = res.response
+        this.allRecipes = res.response ?? []
+        this.recipes = this.allRecipes
+        this.loading = false
 
-        // cuisine type 
-        this.recipes.forEach((item: any) => {
-          !this.cuisineType.includes(item.cuisine) && this.cuisineType.push(item.cuisine)
-        });
-        console.log(this.cuisineType);
-        //meal type
-        this.nestedMealArray=this.recipes.map((item:any)=>item.mealType)
-        console.log(this.nestedMealArray);
-        this.singleMealArray=this.nestedMealArray.flat()
-        console.log(this.singleMealArray);
-        this.singleMealArray.map((item:any)=>{
-          !this.updatedMealArray.includes(item) && this.updatedMealArray.push(item)
-        })
-        
+        this.cuisineType = [...new Set<string>(this.allRecipes.map(item => item.cuisine))].filter(Boolean)
+        this.mealTypes = [...new Set<string>(this.allRecipes.flatMap(item => item.mealType ?? []))].filter(Boolean)
       },
-      error: (err) => {
-        console.log("Api error" + err);
-
+      error: () => {
+        this.loading = false
+        this.errorMessage = 'Could not load recipes. Please try again later.'
       }
     })
   }
 
-  viewRecipe(id: string) {
-  this.router.navigate(['/view-recipe', id]);
-}
+  selectCuisine(cuisine: string | null) {
+    this.selectedCuisine = cuisine
+    this.applyFilters()
+  }
 
-  filterRecipe(key: any, value: any) {
-    this.recipes = this.dummyRecipe.filter((item: any) => item[key].includes(value))
+  selectMeal(meal: string | null) {
+    this.selectedMeal = meal
+    this.applyFilters()
+  }
+
+  clearFilters() {
+    this.selectedCuisine = null
+    this.selectedMeal = null
+    this.searchKey = ''
+    this.applyFilters()
+  }
+
+  get hasActiveFilters(): boolean {
+    return !!(this.selectedCuisine || this.selectedMeal || this.searchKey.trim())
+  }
+
+  private applyFilters() {
+    this.recipes = this.allRecipes.filter(item =>
+      // strict equality for cuisine: "Thai" must not match "Thai-fusion"
+      (!this.selectedCuisine || item.cuisine === this.selectedCuisine) &&
+      (!this.selectedMeal || (Array.isArray(item.mealType) && item.mealType.includes(this.selectedMeal)))
+    )
   }
 
 }

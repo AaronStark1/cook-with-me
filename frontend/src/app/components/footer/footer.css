@@ -1,7 +1,95 @@
-footer a:hover {
+.site-footer {
+  background: var(--broth);
+  color: var(--ink);
+  border-top: var(--rule) solid var(--yolk);
+}
+
+.site-footer__top {
+  padding-block: clamp(2.5rem, 6vw, 5rem) clamp(2rem, 4vw, 3rem);
+}
+
+/* oversized wordmark — the editorial sign-off */
+.site-footer__mark {
+  margin: 0 0 clamp(2rem, 5vw, 4rem);
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 8.6vw, 9rem);
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.site-footer__mark span {
+  display: inline-block;
+  margin-left: 0.05em;
+  padding: 0.04em 0.14em 0.02em;
+  background: var(--yolk);
+  color: var(--broth);
+}
+
+.site-footer__cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 2rem 3rem;
+  padding-top: 1.75rem;
+  border-top: var(--rule) solid var(--ink);
+}
+
+.site-footer__head {
+  margin: 0 0 0.9rem;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+}
+
+.site-footer ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-footer li a {
+  display: inline-block;
+  padding-block: 0.4rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.site-footer li a:hover {
   text-decoration: underline;
 }
 
-footer i {
-  cursor: pointer;
+address {
+  font-style: normal;
+  line-height: 1.9;
+}
+
+address a {
+  text-decoration: none;
+  font-weight: 700;
+}
+
+address a:hover {
+  text-decoration: underline;
+}
+
+.site-footer__base {
+  border-top: 1px solid color-mix(in srgb, var(--ink) 35%, transparent);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.site-footer__base-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  padding-block: 1.1rem;
+}
+
+.site-footer__base-inner a {
+  text-decoration: none;
+}
+
+.site-footer__base-inner a:hover {
+  text-decoration: underline;
 }

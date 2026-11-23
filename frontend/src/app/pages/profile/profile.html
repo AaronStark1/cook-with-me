@@ -1,95 +1,141 @@
-<div class="container my-5">
+<section class="band band--paper profile" aria-labelledby="profile-title">
+  <div class="wrap">
 
-  <div class="row g-5">
+    <!-- HEAD: avatar block + name -->
+    <header class="profile__head">
+      <div class="profile__avatar" aria-hidden="true">{{ initial }}</div>
+      <div>
+        <p class="kicker">Your account</p>
+        <h1 id="profile-title" class="profile__title">Your Profile</h1>
+        @if (displayName) {
+          <p class="profile__name label">{{ displayName }}</p>
+        }
+      </div>
+    </header>
 
-    <!-- LEFT SIDE - PROFILE -->
-    <div class="col-md-6">
-      <div class="card shadow border-0 rounded-4 p-4 text-center">
+    <div class="profile__grid">
 
-        <h3 class="fw-bold mb-4">Update Profile</h3>
+      <!-- LEFT: edit details (cream panel) -->
+      <section class="profile__panel band band--cream" aria-labelledby="details-title">
 
-        <!-- Avatar -->
-        <div class="mb-4">
-          <div class="avatar-circle mx-auto">
-            <i class="bi bi-person-fill"></i>
+        <h2 id="details-title" class="display-sm profile__panel-title">Update Profile</h2>
+
+        @if (message) {
+          <div [class]="'alert alert-' + message.type" [attr.role]="message.type === 'danger' ? 'alert' : 'status'">
+            {{ message.text }}
           </div>
-        </div>
+        }
 
-        <form [formGroup]="profileForm" (ngSubmit)="updateProfile()">
+        <form [formGroup]="profileForm" (ngSubmit)="updateProfile()" novalidate>
 
-          <input
-            type="text"
-            class="form-control mb-3 rounded-pill"
-            placeholder="Enter Name"
-            formControlName="username"
-          />
+          <div class="profile__field">
+            <label for="username" class="form-label">Name</label>
+            <input
+              id="username"
+              type="text"
+              class="form-control"
+              [class.is-invalid]="submitted && f['username'].invalid"
+              placeholder="Enter Name"
+              autocomplete="username"
+              formControlName="username"
+            />
+            <div class="invalid-feedback">Name is required (max 50 characters).</div>
+          </div>
 
-          <input
-            type="email"
-            class="form-control mb-4 rounded-pill"
-            placeholder="Enter Email"
-            formControlName="email"
-          />
+          <div class="profile__field">
+            <label for="email" class="form-label">Email</label>
+            <input
+              id="email"
+              type="email"
+              class="form-control"
+              [class.is-invalid]="submitted && f['email'].invalid"
+              placeholder="Enter Email"
+              autocomplete="email"
+              formControlName="email"
+            />
+            <div class="invalid-feedback">Enter a valid email address.</div>
+          </div>
 
-          <div class="d-flex justify-content-center gap-3">
-
-            <button class="btn btn-success rounded-pill px-4">
-              Update Profile
+          <div class="profile__actions">
+            <button type="submit" class="btn-cwm btn-cwm--broth" [disabled]="saving">
+              {{ saving ? 'Saving…' : 'Update Profile' }}
             </button>
 
-            <button type="button"
-              class="btn btn-outline-secondary rounded-pill px-4">
+            <button type="button" (click)="cancel()" class="btn-cwm btn-cwm--ghost">
               Cancel
             </button>
-
           </div>
 
         </form>
 
-      </div>
-    </div>
+      </section>
 
-    <!-- RIGHT SIDE - DOWNLOAD LIST -->
-    <div class="col-md-6">
-      <div class="card shadow border-0 rounded-4 p-4">
+      <!-- RIGHT: downloaded recipes (broth band) -->
+      <section class="profile__downloads band band--broth" aria-labelledby="downloads-title">
 
-        <h3 class="fw-bold text-center mb-4">
-          Downloaded Recipe List
-        </h3>
-
-        <div class="row g-4">
-
-          <div class="col-md-6"
-            *ngFor="let recipe of downloadedRecipes">
-
-            <div class="card shadow-sm border-0 rounded-4 text-center p-3">
-
-              <img
-                [src]="recipe.image"
-                class="img-fluid rounded-3 mb-3"
-                style="height:150px; object-fit:cover"
-              />
-
-              <h6 class="fw-semibold">
-                {{ recipe.name }}
-              </h6>
-
-              <button
-                class="btn btn-danger btn-sm rounded-pill px-3 mt-2"
-                (click)="deleteDownloadedRecipe(recipe._id)"
-              >
-                Delete
-              </button>
-
-            </div>
-
-          </div>
-
+        <div class="profile__downloads-head">
+          <h2 id="downloads-title" class="display-sm">Downloaded Recipe List</h2>
+          @if (downloadedRecipes.length) {
+            <span class="tag tag--yolk">{{ downloadedRecipes.length }}</span>
+          }
         </div>
 
-      </div>
+        @if (downloadError) {
+          <div class="alert alert-danger profile__alert" role="alert">{{ downloadError }}</div>
+        }
+
+        @if (downloadsLoading) {
+
+          <div class="state profile__state" role="status">
+            <span class="loader" aria-hidden="true"></span>
+            <p class="state__text">Loading your downloads…</p>
+          </div>
+
+        } @else if (!downloadedRecipes.length && !downloadError) {
+
+          <div class="state profile__state">
+            <p class="state__title">Nothing downloaded yet</p>
+            <p class="state__text">Download a recipe as a PDF and it will be listed here.</p>
+            <a routerLink="/all-recipes" class="btn-cwm">Browse recipes</a>
+          </div>
+
+        } @else {
+
+          <ul class="downloads">
+            @for (recipe of downloadedRecipes; track recipe._id) {
+              <li class="downloads__row">
+
+                <div class="photo downloads__photo">
+                  <img
+                    appImgFallback
+                    [src]="recipe.image || plate"
+                    [alt]="'Photo of ' + recipe.name"
+                    loading="lazy"
+                  />
+                </div>
+
+                <h3 class="downloads__name display-xs">
+                  <a [routerLink]="['/view-recipe', recipe.recipeId]">{{ recipe.name }}</a>
+                </h3>
+
+                <button
+                  type="button"
+                  class="btn-cwm btn-cwm--ghost btn-cwm--sm"
+                  (click)="deleteDownloadedRecipe(recipe._id)"
+                  [attr.aria-label]="'Delete ' + recipe.name + ' from your downloads'"
+                >
+                  Delete
+                </button>
+
+              </li>
+            }
+          </ul>
+
+        }
+
+      </section>
+
     </div>
 
   </div>
-
-</div>
+</section>

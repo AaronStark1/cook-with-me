@@ -1,4 +1,5 @@
 export class RecipeModel {
+   _id?: string
    name?: string
    ingredients?: Array<string>
    instructions?: Array<string>

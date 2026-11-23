@@ -1,44 +1,102 @@
-<div class="auth-wrapper">
+<section class="auth band band--paper" aria-labelledby="register-title">
 
-  <div class="auth-card">
+  <div class="auth__platter" aria-hidden="true"></div>
 
-    <h2 class="mb-4">Register here...</h2>
+  <div class="wrap auth__grid">
 
-    <form [formGroup]="registerForm" (ngSubmit)="submit()">
+    <div class="auth__intro">
+      <p class="kicker">New here</p>
+      <h1 id="register-title" class="auth__title">Join in.</h1>
+      <p class="lede auth__lede">
+        Create an account and make the recipe library your own.
+      </p>
 
-      <input
-        type="text"
-        class="form-control mb-3"
-        placeholder="Username"
-        formControlName="username"
-      />
+      <ul class="perks">
+        <li>
+          <span class="perks__n numeral" aria-hidden="true">01</span>
+          <span>Save recipes to your own collection</span>
+        </li>
+        <li>
+          <span class="perks__n numeral" aria-hidden="true">02</span>
+          <span>Download any recipe as a PDF</span>
+        </li>
+        <li>
+          <span class="perks__n numeral" aria-hidden="true">03</span>
+          <span>Share a testimony with the community</span>
+        </li>
+      </ul>
+    </div>
 
-      <input
-        type="email"
-        class="form-control mb-3"
-        placeholder="Email"
-        formControlName="email"
-      />
+    <div class="auth__panel">
 
-      <input
-        type="password"
-        class="form-control mb-3"
-        placeholder="Password"
-        formControlName="password"
-      />
+      <h2 class="auth__panel-title display-sm">Create account</h2>
 
-      <button type="submit" class="btn btn-success px-4">
-        Register
-      </button>
+      @if (errorMessage) {
+        <div class="alert alert-danger" role="alert">{{ errorMessage }}</div>
+      }
 
-    </form>
+      <form [formGroup]="registerForm" (ngSubmit)="submit()" novalidate>
 
-    <p class="mt-3 small">
-      Already have an account?
-      <a routerLink="/login" class="fw-semibold">
-        Login Now
-      </a>
-    </p>
+        <div class="auth__field">
+          <label for="username" class="form-label">Username</label>
+          <input
+            id="username"
+            type="text"
+            class="form-control"
+            [class.is-invalid]="submitted && f['username'].invalid"
+            placeholder="Username"
+            autocomplete="username"
+            formControlName="username"
+          />
+          <div class="invalid-feedback">Username is required (max 50 characters).</div>
+        </div>
+
+        <div class="auth__field">
+          <label for="email" class="form-label">Email</label>
+          <input
+            id="email"
+            type="email"
+            class="form-control"
+            [class.is-invalid]="submitted && f['email'].invalid"
+            placeholder="you@example.com"
+            autocomplete="email"
+            formControlName="email"
+          />
+          <div class="invalid-feedback">
+            @if (f['email'].errors?.['required']) {
+              Email is required.
+            } @else {
+              Enter a valid email address.
+            }
+          </div>
+        </div>
+
+        <div class="auth__field">
+          <label for="password" class="form-label">Password</label>
+          <input
+            id="password"
+            type="password"
+            class="form-control"
+            [class.is-invalid]="submitted && f['password'].invalid"
+            placeholder="At least 8 characters"
+            autocomplete="new-password"
+            formControlName="password"
+          />
+          <div class="invalid-feedback">Password must be between 8 and 72 characters.</div>
+        </div>
+
+        <button type="submit" class="btn-cwm btn-cwm--broth auth__submit" [disabled]="loading">
+          {{ loading ? 'Registering…' : 'Register' }}
+        </button>
+
+      </form>
+
+      <p class="auth__switch">
+        Already have an account?
+        <a routerLink="/login">Login Now</a>
+      </p>
+
+    </div>
 
   </div>
-</div>
+</section>

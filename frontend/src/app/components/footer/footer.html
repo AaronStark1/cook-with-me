@@ -1,80 +1,50 @@
+<footer class="site-footer">
 
+  <div class="wrap site-footer__top">
 
-<!-- FOOTER -->
-<footer class="bg-warning text-white pt-4">
+    <p class="site-footer__mark" aria-hidden="true">
+      Cook <span>With Me</span>
+    </p>
 
-  <!-- SOCIAL BAR -->
-  <div class="container border-bottom pb-3 mb-4">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-      <span>Get connected with us on social networks:</span>
-      <div class="d-flex gap-3 fs-5">
-        <i class="bi bi-facebook"></i>
-        <i class="bi bi-twitter"></i>
-        <i class="bi bi-google"></i>
-        <i class="bi bi-instagram"></i>
-        <i class="bi bi-linkedin"></i>
-        <i class="bi bi-github"></i>
-      </div>
-    </div>
-  </div>
+    <div class="site-footer__cols">
 
-  <!-- MAIN FOOTER -->
-  <div class="container">
-    <div class="row gy-4">
-
-      <!-- BRAND -->
-      <div class="col-md-3">
-        <h5 class="fw-bold d-flex align-items-center gap-2">
-          <img src="assets/chef.png" width="40" />
-          CookWithMe
-        </h5>
-        <p class="small mt-3">
-          Here you can use rows and columns to organize your footer content.
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-        </p>
-      </div>
-
-      <!-- PRODUCTS -->
-      <div class="col-md-3">
-        <h6 class="fw-semibold mb-3">PRODUCTS</h6>
-        <ul class="list-unstyled small">
-          <li><a class="text-white text-decoration-none" href="#">Angular</a></li>
-          <li><a class="text-white text-decoration-none" href="#">React</a></li>
-          <li><a class="text-white text-decoration-none" href="#">Vue</a></li>
-          <li><a class="text-white text-decoration-none" href="#">Laravel</a></li>
+      <nav aria-labelledby="footer-explore">
+        <h2 id="footer-explore" class="label site-footer__head">Explore</h2>
+        <ul>
+          <li><a routerLink="/">Home</a></li>
+          <li><a routerLink="/all-recipes">Recipes</a></li>
+          <li><a routerLink="/about">About</a></li>
+          <li><a routerLink="/contact">Contact</a></li>
         </ul>
-      </div>
+      </nav>
 
-      <!-- LINKS -->
-      <div class="col-md-3">
-        <h6 class="fw-semibold mb-3">USEFUL LINKS</h6>
-        <ul class="list-unstyled small">
-          <li><a class="text-white text-decoration-none" href="#">Pricing</a></li>
-          <li><a class="text-white text-decoration-none" href="#">Settings</a></li>
-          <li><a class="text-white text-decoration-none" href="#">Orders</a></li>
-          <li><a class="text-white text-decoration-none" href="#">Help</a></li>
+      <nav aria-labelledby="footer-account">
+        <h2 id="footer-account" class="label site-footer__head">Your account</h2>
+        <ul>
+          <li><a routerLink="/login">Log in</a></li>
+          <li><a routerLink="/register">Join</a></li>
+          <li><a routerLink="/saved-recipes">My collection</a></li>
+          <li><a routerLink="/profile">Profile</a></li>
         </ul>
-      </div>
+      </nav>
 
-      <!-- CONTACT -->
-      <div class="col-md-3">
-        <h6 class="fw-semibold mb-3">CONTACT</h6>
-        <ul class="list-unstyled small">
-          <li><i class="bi bi-house me-2"></i> New York, NY 10012, US</li>
-          <li><i class="bi bi-envelope me-2"></i> info@example.com</li>
-          <li><i class="bi bi-phone me-2"></i> + 01 234 567 88</li>
-          <li><i class="bi bi-printer me-2"></i> + 01 234 567 89</li>
-        </ul>
+      <div>
+        <h2 class="label site-footer__head">Get in touch</h2>
+        <address>
+          NYC 4567, PO Berlin<br />
+          <a href="mailto:cookwithme@gmail.com">cookwithme&#64;gmail.com</a><br />
+          <a href="tel:989898989">989898989</a>
+        </address>
       </div>
 
     </div>
   </div>
 
-  <!-- COPYRIGHT -->
-  <div class="text-center py-3 mt-4 bg-dark bg-opacity-10">
-    © 2025 Copyright:
-    <a class="text-white fw-semibold text-decoration-none" href="#">
-      CookWithMe.com
-    </a>
+  <div class="site-footer__base">
+    <div class="wrap site-footer__base-inner">
+      <span class="label">© {{ year }} Cook With Me</span>
+      <a class="label" routerLink="/all-recipes">Find something to cook →</a>
+    </div>
   </div>
+
 </footer>

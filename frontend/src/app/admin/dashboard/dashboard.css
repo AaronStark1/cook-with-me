@@ -1,0 +1,49 @@
+/* Four hard-edged colour blocks with oversized numerals. Every pairing keeps AA+ contrast. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.25rem;
+  min-height: 11.5rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  color: var(--fg);
+  background: var(--bg);
+  border: 2px solid var(--broth);
+  text-decoration: none;
+}
+
+.stat p {
+  margin: 0;
+}
+
+.stat__value {
+  font-family: var(--font-display);
+  font-size: clamp(3.25rem, 6vw, 5rem);
+  line-height: 0.85;
+}
+
+.stat__more {
+  margin-top: -0.25rem;
+}
+
+.stat--paper   { --bg: var(--paper);   --fg: var(--ink); }
+.stat--yolk    { --bg: var(--yolk);    --fg: var(--broth); }
+.stat--broth   { --bg: var(--broth);   --fg: var(--ink); }
+.stat--surface { --bg: var(--surface); --fg: var(--ink); }
+
+a.stat:hover {
+  --bg: var(--broth);
+  --fg: var(--yolk);
+  text-decoration: none;
+}
+
+.rank {
+  font-size: 1.6rem;
+}

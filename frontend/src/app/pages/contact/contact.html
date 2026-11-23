@@ -1,92 +1,138 @@
-<!-- HERO -->
-<div class="bg-warning text-white text-center py-5">
-  <h1 class="fw-bold">Contact Us</h1>
-  <p class="mt-2 small px-5">
-    Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptates rerum,
-    at accusantium magnam error tempore voluptatum architecto praesentium
-    commodi excepturi molestias, ex esse eius doloremque sapiente molestiae
-    vitae. Ab, nulla.
-  </p>
-</div>
+<section class="band band--paper contact" aria-labelledby="contact-title">
+  <div class="wrap">
 
-<!-- CONTENT -->
-<div class="container my-5">
-  <div class="row g-4">
+    <!-- HERO -->
+    <header class="contact__head">
+      <p class="kicker">Contact</p>
+      <h1 id="contact-title" class="contact__title">Say hello.</h1>
+      <p class="lede">
+        Questions, feedback or a kitchen story to share? We'd love to hear from you.
+      </p>
+    </header>
 
-    <!-- LEFT INFO -->
-    <div class="col-md-6">
-      <div class="bg-white p-4 rounded-4 shadow-sm h-100">
-        <h5 class="fw-bold mb-3">Get In Touch</h5>
-        <p class="small text-muted">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Nisi quasi
-          odio aperiam! Quasi eius expedita, voluptatibus dolorem corrupti
-          accusantium non perferendis rem eligendi.
+    <div class="contact__grid">
+
+      <!-- LEFT: details (existing contact info only) -->
+      <aside class="contact__info" aria-labelledby="touch-title">
+        <h2 id="touch-title" class="display-sm">Get In Touch</h2>
+        <p class="contact__intro">
+          Reach out any time — questions, feedback and kitchen stories are all welcome.
         </p>
 
-        <p class="mb-1 fw-semibold">Address</p>
-        <p class="small text-muted">NYC 4567, PO Berlin.</p>
+        <dl class="contact__list">
+          <div>
+            <dt class="label">Address</dt>
+            <dd>NYC 4567, PO Berlin.</dd>
+          </div>
+          <div>
+            <dt class="label">Email</dt>
+            <dd><a href="mailto:cookwithme@gmail.com">cookwithme&#64;gmail.com</a></dd>
+          </div>
+          <div>
+            <dt class="label">Phone</dt>
+            <dd><a href="tel:989898989">989898989</a></dd>
+          </div>
+        </dl>
+      </aside>
 
-        <p class="mb-1 fw-semibold">Email</p>
-        <p class="small text-muted">cookwithme@gmail.com</p>
+      <!-- RIGHT: testimony form -->
+      <section class="contact__panel" aria-labelledby="testimony-title">
+        <h2 id="testimony-title" class="display-sm contact__panel-title">Client Testimony</h2>
 
-        <p class="mb-1 fw-semibold">Phone</p>
-        <p class="small text-muted">989898989</p>
-      </div>
-    </div>
+        @if (!auth.isLoggedIn()) {
 
-    <!-- RIGHT FORM -->
-    <div class="col-md-6">
-      <div class="bg-white p-4 rounded-4 shadow-sm h-100">
-        <h5 class="fw-bold mb-3">Client Testimony</h5>
-
-        <form (ngSubmit)="addTestimony()">
-          <input
-            type="text"
-            [(ngModel)]="testimonyData.username"
-            name="username"
-            class="form-control mb-3"
-            placeholder="Username"
-          />
-
-          <input
-            type="email"
-            [(ngModel)]="testimonyData.email"
-            name="email"
-            class="form-control mb-3"
-            placeholder="Email"
-          />
-
-          <textarea
-            rows="4"
-            [(ngModel)]="testimonyData.message"
-            name="message"
-            class="form-control mb-3"
-            placeholder="Message"
-          ></textarea>
-
-            <input
-            type="text"
-            [(ngModel)]="testimonyData.profession"
-            name="profession"
-            class="form-control mb-3"
-            placeholder="Profession"
-          />
-          
-          <div class="form-check mb-3">
-            <input class="form-check-input" type="checkbox" />
-            <label class="form-check-label small">
-              By Submitting, your agreeing the terms and condition of our
-              website.
-            </label>
+          <div class="state contact__state">
+            <p class="state__title">Log in to share your testimony</p>
+            <p class="state__text">
+              Please log in to share your testimony — we show it next to your
+              account name once it has been approved.
+            </p>
+            <a
+              routerLink="/login"
+              [queryParams]="{ returnUrl: '/contact' }"
+              class="btn-cwm btn-cwm--broth"
+            >
+              Log in to continue
+            </a>
           </div>
 
-          <button class="btn btn-success px-4">
-            Submit
-          </button>
-        </form>
+        } @else {
 
-      </div>
+          @if (successMessage) {
+            <div class="alert alert-success" role="status">{{ successMessage }}</div>
+          }
+          @if (errorMessage) {
+            <div class="alert alert-danger" role="alert">{{ errorMessage }}</div>
+          }
+
+          <p class="contact__as label">
+            Posting as <strong>{{ auth.user()?.username }}</strong>
+          </p>
+
+          <form #testimonyForm="ngForm" (ngSubmit)="addTestimony(testimonyForm)" novalidate>
+
+            <div class="contact__field">
+              <label for="message" class="form-label">Message</label>
+              <textarea
+                id="message"
+                rows="4"
+                [(ngModel)]="testimonyData.message"
+                name="message"
+                #message="ngModel"
+                class="form-control"
+                [class.is-invalid]="submitted && message.invalid"
+                placeholder="Tell us about your experience"
+                required
+                maxlength="1000"
+              ></textarea>
+              <div class="invalid-feedback">Please write a message (max 1000 characters).</div>
+            </div>
+
+            <div class="contact__field">
+              <label for="profession" class="form-label">Profession</label>
+              <input
+                id="profession"
+                type="text"
+                [(ngModel)]="testimonyData.profession"
+                name="profession"
+                #profession="ngModel"
+                class="form-control"
+                [class.is-invalid]="submitted && profession.invalid"
+                placeholder="e.g. Home cook"
+                required
+                maxlength="100"
+              />
+              <div class="invalid-feedback">Please enter your profession.</div>
+            </div>
+
+            <div class="form-check contact__agree">
+              <input
+                id="agree"
+                class="form-check-input"
+                [class.is-invalid]="submitted && agree.invalid"
+                type="checkbox"
+                [(ngModel)]="testimonyData.agree"
+                name="agree"
+                #agree="ngModel"
+                required
+              />
+              <label for="agree" class="form-check-label">
+                By submitting, you agree to the terms and conditions of our
+                website.
+              </label>
+              <div class="invalid-feedback">You need to accept the terms to submit.</div>
+            </div>
+
+            <button type="submit" class="btn-cwm btn-cwm--broth contact__submit" [disabled]="loading">
+              {{ loading ? 'Submitting…' : 'Submit' }}
+            </button>
+          </form>
+
+        }
+
+      </section>
+
     </div>
 
   </div>
-</div>
+</section>

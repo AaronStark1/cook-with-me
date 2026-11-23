@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { ManageRecipe } from './manage-recipe';
+import { appTestProviders } from '../../../testing/providers';
 
 describe('ManageRecipe', () => {
   let component: ManageRecipe;
@@ -8,7 +9,8 @@ describe('ManageRecipe', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ManageRecipe]
+      imports: [ManageRecipe],
+      providers: appTestProviders
     })
     .compileComponents();
 

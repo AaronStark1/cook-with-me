@@ -1,161 +1,174 @@
-<div class="container my-5" *ngIf="recipe">
+@if (state === 'loading') {
 
-  <!-- BACK BUTTON -->
-  <button
-    routerLink="/all-recipes"
-    class="btn btn-outline-warning rounded-pill mb-4"
-  >
-    ← Back to Recipes
-  </button>
-
-  <div class="row g-5">
-
-    <!-- LEFT IMAGE -->
-    <div class="col-md-6">
-      <img
-        [src]="recipe.image"
-        class="img-fluid rounded-4 shadow"
-      />
+  <section class="band band--paper article-state" aria-label="Loading recipe">
+    <div class="state" role="status">
+      <span class="loader" aria-hidden="true"></span>
+      <p class="state__text">Loading recipe…</p>
     </div>
+  </section>
 
-    <!-- RIGHT DETAILS -->
-    <div class="col-md-6">
+} @else if (state === 'error') {
 
-      <h2 class="fw-bold mb-4">
-        {{ recipe.title }}
-      </h2>
-
-      <!-- INFO ROW -->
-      <div class="d-flex gap-5 mb-4 flex-wrap">
-
-        <div>
-          <i class="bi bi-basket2-fill fs-4 text-warning"></i>
-          <p class="mb-0 fw-semibold">Cuisine</p>
-          <small>{{ recipe.cuisine }}</small>
-        </div>
-
-        <div>
-          <i class="bi bi-people-fill fs-4 text-warning"></i>
-          <p class="mb-0 fw-semibold">Servings</p>
-          <small>{{ recipe.servings }}</small>
-        </div>
-
-        <div>
-          <i class="bi bi-fire fs-4 text-warning"></i>
-          <p class="mb-0 fw-semibold">Calories</p>
-          <small>{{ recipe.calories }} kcal</small>
-        </div>
-
-      </div>
-
-      <!-- TIMING CARDS -->
-      <div class="row text-center mb-4">
-
-        <div class="col-4">
-          <div class="card p-3 shadow-sm rounded-4 border-0">
-            <p class="fw-semibold mb-1">Prep</p>
-            <small>{{ recipe.prepTime }} mins</small>
-          </div>
-        </div>
-
-        <div class="col-4">
-          <div class="card p-3 shadow-sm rounded-4 border-0">
-            <p class="fw-semibold mb-1">Cook</p>
-            <small>{{ recipe.cookTime }} mins</small>
-          </div>
-        </div>
-
-        <div class="col-4">
-          <div class="card p-3 shadow-sm rounded-4 border-0">
-            <p class="fw-semibold mb-1">Mode</p>
-            <small>{{ recipe.mode }}</small>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- ACTION BUTTONS -->
-      <div class="d-flex gap-3 mb-3">
-        <button (click)="addRecipeDownload()" class="btn btn-success rounded-pill px-4">
-          ⬇ Download
-        </button>
-
-        <button class="btn btn-primary rounded-pill px-4">
-          ❤️ Save
-        </button>
-      </div>
-
-      <!-- TAGS -->
-      <div class="d-flex gap-2 mb-4 flex-wrap">
-        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-          {{ recipe.category }}
-        </span>
-
-        <span class="badge bg-light text-dark px-3 py-2 rounded-pill shadow-sm">
-          {{ recipe.difficulty }}
-        </span>
-
-        <span class="badge bg-light text-dark px-3 py-2 rounded-pill shadow-sm">
-          Popular
-        </span>
-      </div>
-
-      <!-- INGREDIENTS -->
-      <h5 class="fw-bold mt-4">🥣 Ingredients</h5>
-      <ul class="list-group list-group-flush mb-4">
-        <li
-          class="list-group-item"
-          *ngFor="let item of recipe.ingredients"
-        >
-          {{ item }}
-        </li>
-      </ul>
-
-      <!-- COOKING INSTRUCTIONS -->
-      <h5 class="fw-bold mt-4">👨‍🍳 Cooking Instructions</h5>
-      <ol class="list-group list-group-numbered">
-        <li
-          class="list-group-item"
-          *ngFor="let step of recipe.instructions"
-        >
-          {{ step }}
-        </li>
-      </ol>
-
+  <section class="band band--paper article-state" aria-labelledby="recipe-error-title">
+    <div class="state" role="alert">
+      <h1 id="recipe-error-title" class="state__title">Recipe not found</h1>
+      <p class="state__text">{{ errorMessage }}</p>
+      <a routerLink="/all-recipes" class="btn-cwm">Browse all recipes</a>
     </div>
+  </section>
 
-  </div>
+} @else if (recipe) {
 
-  <!-- RELATED RECIPES -->
-  <div class="mt-5" *ngIf="relatedRecipes?.length">
+  <!-- FEATURE HEAD -->
+  <section class="band band--paper feature" aria-labelledby="recipe-title">
+    <div class="wrap">
 
-    <h4 class="fw-bold mb-4">Related Recipes</h4>
+      <a routerLink="/all-recipes" class="feature__back label">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to recipes
+      </a>
 
-    <div class="row g-4">
+      <div class="feature__grid">
 
-      <div
-        class="col-md-3"
-        *ngFor="let item of relatedRecipes"
-      >
-        <div
-          class="card shadow-sm border-0 rounded-4 h-100"
-          [routerLink]="['/view-recipe', item._id]"
-          style="cursor:pointer"
-        >
-          <img
-            [src]="item.image"
-            class="card-img-top rounded-top-4"
-          />
-          <div class="card-body text-center">
-            <small class="fw-semibold">
-              {{ item.title }}
-            </small>
+        <div class="feature__text">
+
+          <p class="kicker">
+            {{ recipe.cuisine }}@if (recipe.mealType?.length) { · {{ recipe.mealType?.join(' / ') }} }
+          </p>
+
+          <h1 id="recipe-title" class="feature__title">{{ recipe.name }}</h1>
+
+          <!-- key facts: oversized numerals, only fields the record actually has -->
+          <dl class="facts">
+            @if (recipe.prepTimeMinutes != null) {
+              <div class="fact">
+                <dt class="label">Prep</dt>
+                <dd><span class="numeral">{{ recipe.prepTimeMinutes }}</span><span class="fact__unit label">min</span></dd>
+              </div>
+            }
+            @if (recipe.cookTimeMinutes != null) {
+              <div class="fact">
+                <dt class="label">Cook</dt>
+                <dd><span class="numeral">{{ recipe.cookTimeMinutes }}</span><span class="fact__unit label">min</span></dd>
+              </div>
+            }
+            @if (recipe.servings != null) {
+              <div class="fact">
+                <dt class="label">Serves</dt>
+                <dd><span class="numeral">{{ recipe.servings }}</span></dd>
+              </div>
+            }
+            @if (recipe.caloriesPerServing != null) {
+              <div class="fact">
+                <dt class="label">Calories</dt>
+                <dd><span class="numeral">{{ recipe.caloriesPerServing }}</span><span class="fact__unit label">kcal</span></dd>
+              </div>
+            }
+            @if (recipe.difficulty) {
+              <div class="fact fact--word">
+                <dt class="label">Difficulty</dt>
+                <dd><span class="fact__word display">{{ recipe.difficulty }}</span></dd>
+              </div>
+            }
+          </dl>
+
+          <!-- ACTIONS -->
+          <div class="feature__actions">
+            <button
+              type="button"
+              (click)="downloadRecipe()"
+              [disabled]="downloading"
+              class="btn-cwm btn-cwm--ink"
+            >
+              <i class="bi bi-download" aria-hidden="true"></i>
+              {{ downloading ? 'Preparing…' : 'Download PDF' }}
+            </button>
+
+            <button
+              type="button"
+              (click)="saveRecipe()"
+              [disabled]="saving"
+              class="btn-cwm"
+            >
+              <i class="bi bi-bookmark-heart" aria-hidden="true"></i>
+              {{ saving ? 'Saving…' : 'Save' }}
+            </button>
+          </div>
+
+          @if (!auth.isLoggedIn()) {
+            <p class="feature__hint label">
+              <a routerLink="/login" [queryParams]="{ returnUrl: '/view-recipe/' + recipeId }">Log in</a>
+              or
+              <a routerLink="/register">join</a>
+              to save and download recipes.
+            </p>
+          }
+
+          @if (notice) {
+            <div [class]="'alert alert-' + notice.type" [attr.role]="notice.type === 'danger' ? 'alert' : 'status'">
+              {{ notice.text }}
+            </div>
+          }
+
+        </div>
+
+        <div class="feature__photo">
+          <div class="photo photo--offset">
+            <img
+              appImgFallback
+              [src]="recipe.image || plate"
+              [alt]="recipe.name ?? 'Recipe photo'"
+              fetchpriority="high"
+              decoding="async"
+            />
           </div>
         </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- INGREDIENTS + METHOD -->
+  <section class="band band--cream method" aria-label="Ingredients and method">
+    <div class="wrap method__grid">
+
+      <aside class="ingredients" aria-labelledby="ingredients-title">
+        <h2 id="ingredients-title" class="display-md">Ingredients</h2>
+        <ul>
+          @for (item of recipe.ingredients ?? []; track $index) {
+            <li>{{ item }}</li>
+          }
+        </ul>
+      </aside>
+
+      <div class="steps" aria-labelledby="steps-title">
+        <h2 id="steps-title" class="display-md">Method</h2>
+        <ol>
+          @for (step of recipe.instructions ?? []; track $index) {
+            <li>
+              <span class="steps__n numeral" aria-hidden="true">{{ $index + 1 < 10 ? '0' : '' }}{{ $index + 1 }}</span>
+              <p>{{ step }}</p>
+            </li>
+          }
+        </ol>
       </div>
 
     </div>
+  </section>
 
-  </div>
+  <!-- RELATED -->
+  @if (relatedRecipes.length) {
+    <section class="band band--paper related" aria-labelledby="related-title">
+      <div class="wrap">
+        <p class="kicker">Keep cooking</p>
+        <h2 id="related-title" class="display-lg related__title">Related recipes</h2>
 
-</div>
+        <ul class="related__grid">
+          @for (item of relatedRecipes; track item._id) {
+            <li><app-recipe-tile [recipe]="item" /></li>
+          }
+        </ul>
+      </div>
+    </section>
+  }
+
+}

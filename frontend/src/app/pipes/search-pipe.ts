@@ -5,14 +5,15 @@ import { Pipe, PipeTransform } from '@angular/core';
 })
 export class SearchPipe implements PipeTransform {
 
-  transform(recipes: any[], searchKey: string): any {
-    let result: any = [];
-    if (!recipes || searchKey == '') {
-      return recipes
-    } else {
-      result = recipes.filter((item: any) => item.name.toLowerCase().trim().includes(searchKey.toLocaleLowerCase().trim()))
-      return result
+  transform(recipes: any[] | null | undefined, searchKey: string | null | undefined): any[] {
+    if (!recipes) {
+      return [];
     }
+    const key = (searchKey ?? '').toString().trim().toLowerCase();
+    if (!key) {
+      return recipes;
+    }
+    return recipes.filter((item: any) => (item?.name ?? '').toString().toLowerCase().includes(key));
   }
 
 }

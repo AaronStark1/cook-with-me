@@ -1,0 +1,146 @@
+:host {
+  display: block;
+}
+
+/* ---- Editorial strip: three oversized words split by yolk squares ---- */
+.strip {
+  padding-block: clamp(1.25rem, 3vw, 2.25rem);
+  border-top: var(--rule) solid var(--ink);
+}
+
+.strip__inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(0.5rem, 3vw, 2.5rem);
+}
+
+/* three words + two marks always share one line: sized from the viewport, not the container */
+.strip__word {
+  margin: 0;
+  font-size: clamp(0.9rem, 5.2vw, 5.25rem);
+  line-height: 1;
+}
+
+.strip__mark {
+  flex: none;
+  width: clamp(0.8rem, 2vw, 1.5rem);
+  height: clamp(0.8rem, 2vw, 1.5rem);
+  background: var(--yolk);
+}
+
+/* ---- Section head ---- */
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem 2rem;
+  margin-bottom: clamp(1.75rem, 4vw, 3rem);
+  padding-bottom: 1.5rem;
+  border-bottom: var(--rule) solid currentColor;
+}
+
+.section-head .lede {
+  margin: 1rem 0 0;
+}
+
+/* ---- Recipe band (cream): tiles inherit broth text, soft-ink metadata, broth offset ---- */
+.recipes {
+  --tile-meta: var(--ink-soft);
+  --tile-shadow: var(--broth);
+}
+
+.recipes__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(15.5rem, 100%), 1fr));
+  gap: clamp(1.5rem, 3vw, 2.5rem) clamp(1rem, 2vw, 1.75rem);
+  margin: 0;
+  padding: 0 0.6rem 0.6rem 0;
+  list-style: none;
+}
+
+/* ---- Testimonials ---- */
+.voices__title {
+  margin-bottom: clamp(1.75rem, 4vw, 3rem);
+}
+
+.voices__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(19rem, 100%), 1fr));
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.quote {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0 0 0 1.25rem;
+  border-left: 6px solid var(--yolk);
+}
+
+.quote__mark {
+  display: block;
+  height: 0.55em;
+  margin-bottom: 0.9rem;
+  font-size: clamp(4rem, 7vw, 6rem);
+  line-height: 0.85;
+  color: var(--ink);
+}
+
+.quote__text {
+  margin: 0 0 1.25rem;
+}
+
+.quote__text p {
+  margin: 0;
+  font-size: clamp(1.15rem, 1.6vw, 1.4rem);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.quote__by {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: auto;
+}
+
+.quote__name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  text-transform: uppercase;
+}
+
+.quote__job {
+  color: var(--muted);
+}
+
+.voices__empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem 2rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: var(--rule) solid var(--ink);
+}
+
+.voices__empty .lede {
+  margin: 0;
+}
+
+/* ---- CTA ---- */
+.cta__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem 3rem;
+}
+
+.cta__lede {
+  margin: 1rem 0 0;
+}

@@ -1,0 +1,21 @@
+<a class="tile" [routerLink]="['/view-recipe', recipe()._id]">
+  <span class="tile__photo photo">
+    <img
+      appImgFallback
+      [src]="recipe().image || plate"
+      [alt]="recipe().name ?? 'Recipe photo'"
+      loading="lazy"
+      decoding="async"
+    />
+    @if (numeral()) {
+      <span class="tile__numeral numeral" aria-hidden="true">{{ numeral() }}</span>
+    }
+  </span>
+
+  <span class="tile__body">
+    <span class="tile__title display-xs">{{ recipe().name }}</span>
+    @if (meta().length) {
+      <span class="tile__meta label">{{ meta().join(' · ') }}</span>
+    }
+  </span>
+</a>

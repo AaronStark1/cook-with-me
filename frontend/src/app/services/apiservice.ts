@@ -1,107 +1,109 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { environment } from '../../environments/environment';
+import { RecipeModel } from '../models/recipe-model';
 
+/**
+ * Thin wrapper over the REST API. The bearer token is attached (and 401s are
+ * handled) centrally by `authInterceptor`, so nothing here deals with auth.
+ */
 @Injectable({
   providedIn: 'root',
 })
 export class Apiservice {
-  baseURL: string = 'http://localhost:3000'
+  readonly baseURL: string = environment.apiUrl
+
   constructor(private http: HttpClient) { }
-  getRecipeAPI() {
-    return this.http.get(`${this.baseURL}/api/allRecipes`)
-  }
+
+  // ---- Auth / profile
   registerUserAPI(data: any) {
-    return this.http.post(`${this.baseURL}/registration`, data);
+    return this.http.post(`${this.baseURL}/api/registration`, data);
   }
 
   loginAPI(data: any) {
     return this.http.post(`${this.baseURL}/api/login`, data);
   }
 
-  // 🔐 Attach JWT Token
-  appendToken() {
-
-    let headers = new HttpHeaders();
-
-    const token = sessionStorage.getItem('token');
-
-    if (token) {
-      headers = headers.append('Authorization', `Bearer ${token}`);
-    }
-
-    return { headers };
+  updateProfileAPI(data: { username: string; email: string }) {
+    return this.http.patch(`${this.baseURL}/api/updateProfile`, data);
   }
-  viewRecipeAPI(id: any) {
-    return this.http.get(`${this.baseURL}/api/viewRecipe/${id}`, this.appendToken())
+
+  // ---- Recipes
+  getRecipeAPI() {
+    return this.http.get(`${this.baseURL}/api/allRecipes`)
+  }
+
+  viewRecipeAPI(id: string) {
+    return this.http.get<RecipeModel>(`${this.baseURL}/api/viewRecipe/${encodeURIComponent(id)}`)
   }
 
   getRelatedRecipeAPI(cuisine: string) {
-    return this.http.get(
-      `${this.baseURL}/api/relatedRecipe?cuisine=${cuisine}`,
-      this.appendToken()
-    );
-  }
-  getSavedRecipesAPI() {
-    return this.http.get(
-      `${this.baseURL}/api/getSavedRecipes`,
-      this.appendToken()
-    );
-  }
-
-  deleteSavedRecipeAPI(id: any) {
-    return this.http.delete(
-      `${this.baseURL}/api/deleteSavedRecipe/${id}`,
-      this.appendToken()
-    );
-  }
-
-  addDownloadAPI(id: any, reqbody: any) {
-    return this.http.post(`${this.baseURL}/api/addDownload/${id}`, reqbody, this.appendToken());
-  }
-
-  getDownloadAPI() {
-    return this.http.get(
-      `${this.baseURL}/api/getDownload`,
-      this.appendToken()
-    );
-  }
-
-  deleteDownloadAPI(id: any) {
-    return this.http.delete(`${this.baseURL}/api/deleteDownload/${id}`, this.appendToken())
-  }
-  getAllUsersAPI() {
-    return this.http.get(`${this.baseURL}/api/getAllUsers`)
-  }
-
-  getDownloadedRecipesListAPI() {
-    return this.http.get(
-      `${this.baseURL}/api/getDownloadedRecipesList`
-    );
-  }
-  addTestimonyAPI(reqbody: any) {
-    return this.http.post(`${this.baseURL}/api/addTestimony`, reqbody, this.appendToken());
-  }
-  getTestimonyAPI() {
-    return this.http.get(`${this.baseURL}/api/getTestimony`);
-  }
-  getApprovedTestimonyAPI() {
-    return this.http.get(`${this.baseURL}/api/getApprovedTestimony`);
-  }
-
-  updateTestimonyStatusAPI(id: string, status: string) {
-    return this.http.patch(
-      `${this.baseURL}/api/updateTestimony/${id}`,
-      { status }
-    );
+    const params = new HttpParams().set('cuisine', cuisine);
+    return this.http.get<RecipeModel[]>(`${this.baseURL}/api/relatedRecipe`, { params });
   }
 
   addRecipeAPI(reqbody: any) {
     return this.http.post(`${this.baseURL}/api/addRecipe`, reqbody);
   }
-  updateRecipeAPI(id:any,reqbody: any) {
-    return this.http.put(`${this.baseURL}/api/updateRecipe/${id}`, reqbody);
+
+  updateRecipeAPI(id: string, reqbody: any) {
+    return this.http.put(`${this.baseURL}/api/updateRecipe/${encodeURIComponent(id)}`, reqbody);
   }
-    deleteRecipeAPI(id:any) {
-    return this.http.delete(`${this.baseURL}/api/deleteRecipe/${id}`);
+
+  deleteRecipeAPI(id: string) {
+    return this.http.delete(`${this.baseURL}/api/deleteRecipe/${encodeURIComponent(id)}`);
+  }
+
+  // ---- Saved recipes
+  saveRecipeAPI(id: string) {
+    // name/image are taken from the recipe catalogue server-side
+    return this.http.post(`${this.baseURL}/api/savedRecipe/${encodeURIComponent(id)}`, {});
+  }
+
+  getSavedRecipesAPI() {
+    return this.http.get(`${this.baseURL}/api/getSavedRecipes`);
+  }
+
+  deleteSavedRecipeAPI(id: string) {
+    return this.http.delete(`${this.baseURL}/api/deleteSavedRecipe/${encodeURIComponent(id)}`);
+  }
+
+  // ---- Downloads
+  addDownloadAPI(id: string) {
+    return this.http.post(`${this.baseURL}/api/addDownload/${encodeURIComponent(id)}`, {});
+  }
+
+  getDownloadAPI() {
+    return this.http.get(`${this.baseURL}/api/getDownload`);
+  }
+
+  deleteDownloadAPI(id: string) {
+    return this.http.delete(`${this.baseURL}/api/deleteDownload/${encodeURIComponent(id)}`)
+  }
+
+  // ---- Admin
+  getAllUsersAPI() {
+    return this.http.get(`${this.baseURL}/api/getAllUsers`)
+  }
+
+  getDownloadedRecipesListAPI() {
+    return this.http.get(`${this.baseURL}/api/getDownloadedRecipesList`);
+  }
+
+  // ---- Testimonies
+  addTestimonyAPI(reqbody: { message: string; profession: string }) {
+    return this.http.post(`${this.baseURL}/api/addTestimony`, reqbody);
+  }
+
+  getTestimonyAPI() {
+    return this.http.get(`${this.baseURL}/api/getTestimony`);
+  }
+
+  getApprovedTestimonyAPI() {
+    return this.http.get(`${this.baseURL}/api/getApprovedTestimony`);
+  }
+
+  updateTestimonyStatusAPI(id: string, status: string) {
+    return this.http.patch(`${this.baseURL}/api/updateTestimony/${encodeURIComponent(id)}`, { status });
   }
 }

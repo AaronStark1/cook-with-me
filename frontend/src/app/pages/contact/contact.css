@@ -1,0 +1,139 @@
+:host {
+  display: block;
+}
+
+.contact {
+  padding-block: clamp(2.5rem, 6vw, 5rem) clamp(3rem, 7vw, 6rem);
+}
+
+.contact__head {
+  margin-bottom: clamp(2rem, 5vw, 3.5rem);
+}
+
+.contact__title {
+  margin-bottom: 1.25rem;
+  font-size: clamp(3rem, 11vw, 8rem);
+  line-height: 0.9;
+  overflow-wrap: break-word;
+}
+
+.contact__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2rem, 4vw, 3rem);
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .contact__grid {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  }
+}
+
+/* ---- Yolk block: the details (broth on yolk 12:1) ---- */
+.contact__info {
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  background: var(--yolk);
+  color: var(--broth);
+  border: var(--rule) solid var(--broth);
+}
+
+.contact__info h2 {
+  margin-bottom: 1rem;
+  padding-bottom: 0.9rem;
+  border-bottom: var(--rule) solid var(--broth);
+}
+
+.contact__intro {
+  max-width: 28rem;
+}
+
+.contact__list {
+  display: grid;
+  gap: 0;
+  margin: 1.5rem 0 0;
+}
+
+.contact__list > div {
+  padding-block: 0.9rem;
+  border-top: 1px solid color-mix(in srgb, var(--broth) 45%, transparent);
+}
+
+.contact__list dt {
+  margin-bottom: 0.2rem;
+}
+
+.contact__list dd {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* ---- Cream form panel with a hard broth offset ---- */
+.contact__panel {
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  background: var(--ink);
+  color: var(--broth);
+  border: var(--rule) solid var(--broth);
+  box-shadow: 8px 8px 0 var(--broth);
+}
+
+@media (min-width: 600px) {
+  .contact__panel {
+    box-shadow: 12px 12px 0 var(--broth);
+  }
+}
+
+.contact__panel-title {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.9rem;
+  border-bottom: var(--rule) solid var(--broth);
+}
+
+.contact__as {
+  margin: 0 0 1.25rem;
+  color: var(--ink-soft);
+}
+
+.contact__as strong {
+  color: var(--broth);
+}
+
+.contact__field {
+  margin-bottom: 1.1rem;
+}
+
+.contact__agree {
+  flex-wrap: wrap; /* lets the validation message drop onto its own row */
+  margin-bottom: 1.25rem;
+}
+
+.contact__agree .invalid-feedback {
+  flex-basis: 100%;
+}
+
+.contact__submit {
+  width: 100%;
+}
+
+@media (min-width: 600px) {
+  .contact__submit {
+    width: auto;
+    min-width: 12rem;
+  }
+}
+
+/* signed-out state sits inside the panel, left-aligned */
+.contact__state {
+  padding: 0.5rem 0 0;
+  text-align: left;
+}
+
+.contact__state .state__title {
+  font-size: clamp(1.3rem, 3vw, 1.9rem);
+}
+
+.contact__state .state__text {
+  margin-inline: 0;
+}

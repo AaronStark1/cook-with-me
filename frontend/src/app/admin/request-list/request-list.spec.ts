@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { RequestList } from './request-list';
+import { appTestProviders } from '../../../testing/providers';
 
 describe('RequestList', () => {
   let component: RequestList;
@@ -8,7 +9,8 @@ describe('RequestList', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RequestList]
+      imports: [RequestList],
+      providers: appTestProviders
     })
     .compileComponents();
 

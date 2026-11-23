@@ -1,17 +1,18 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Apiservice } from '../../services/apiservice';
 
 @Component({
   selector: 'app-request-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './request-list.html',
   styleUrl: './request-list.css'
 })
 export class RequestList implements OnInit {
 
   testimonyList: any[] = [];
+  loading = true;
+  errorMessage = '';
 
   constructor(private api: Apiservice) { }
 
@@ -22,36 +23,32 @@ export class RequestList implements OnInit {
   getAllTestimonies() {
     this.api.getTestimonyAPI().subscribe({
       next: (res: any) => {
-        console.log(res);
-        this.testimonyList = res.allTestimony;
+        this.testimonyList = res.allTestimony ?? [];
+        this.loading = false;
       },
-      error: (err) => {
-        console.log("API Error", err);
+      error: () => {
+        this.loading = false;
+        this.errorMessage = 'Could not load requests. Please try again.';
       }
     });
   }
 
   approveTestimony(id: string) {
-    this.api.updateTestimonyStatusAPI(id, 'Approved').subscribe({
-      next: () => {
-        this.getAllTestimonies();
-      },
-      error: (err) => {
-        console.log(err);
-      }
-    });
+    this.updateStatus(id, 'Approved');
   }
 
   rejectTestimony(id: string) {
-    this.api.updateTestimonyStatusAPI(id, 'Rejected').subscribe({
-      next: () => {
-        this.getAllTestimonies();
-      },
+    this.updateStatus(id, 'Rejected');
+  }
+
+  private updateStatus(id: string, status: 'Approved' | 'Rejected') {
+    this.errorMessage = '';
+    this.api.updateTestimonyStatusAPI(id, status).subscribe({
+      next: () => this.getAllTestimonies(),
       error: (err) => {
-        console.log(err);
+        this.errorMessage = err?.error?.message || 'Could not update the request.';
       }
     });
   }
-
 
 }

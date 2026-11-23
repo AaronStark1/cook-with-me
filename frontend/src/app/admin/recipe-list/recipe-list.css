@@ -1,0 +1,5 @@
+/* Layout primitives (page head, panel, toolbar, table, row actions, thumbnails) are shared:
+   see ../admin-layout/admin-shared.css */
+.toolbar .label {
+  margin: 0;
+}

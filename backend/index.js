@@ -1,17 +1,22 @@
 require('dotenv').config()
-const express = require('express')
-require('./config/db')
-const route=require('./router/route')
-const cors=require('cors')
+const { validateEnv } = require('./config/env')
 
-const kitchencraft=express()
-kitchencraft.use(cors())
-kitchencraft.use(express.json())
-kitchencraft.use(route)
+try {
+    validateEnv()
+} catch (err) {
+    console.error(err.message)
+    process.exit(1)
+}
 
-const PORT=3000||process.env.PORT
+const connectDB = require('./config/db')
+const app = require('./app')
 
-kitchencraft.listen(PORT,()=>{
-    console.log("server runs on port 3000");
-    
-})
+const PORT = process.env.PORT || 3000
+
+connectDB()
+    .then(() => {
+        app.listen(PORT, () => {
+            console.log(`server runs on port ${PORT}`)
+        })
+    })
+    .catch(() => process.exit(1))

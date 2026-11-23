@@ -1,36 +1,84 @@
-<div class="container my-5">
+<section class="band band--paper saved" aria-labelledby="saved-title">
+  <div class="wrap">
 
-  <h3 class="fw-bold text-center mb-4">Your Collections</h3>
-
-  <div class="row justify-content-start g-4">
-
-    <div
-      class="col-md-4 col-lg-3"
-      *ngFor="let recipe of savedRecipes"
-    >
-      <div class="card h-100 shadow-sm border-0 rounded-4 position-relative">
-
-        <img
-          [src]="recipe.image"
-          class="card-img-top rounded-top-4"
-        />
-
-        <!-- DELETE ICON -->
-        <button
-          class="btn btn-danger btn-sm position-absolute bottom-0 end-0 m-2"
-          (click)="removeRecipe(recipe._id)"
-        >
-          <i class="bi bi-trash"></i>
-        </button>
-
-        <div class="card-body">
-          <h6 class="fw-semibold mb-0">
-            {{ recipe.name }}
-          </h6>
-        </div>
-
+    <header class="saved__head">
+      <div>
+        <p class="kicker">Your collection</p>
+        <h1 id="saved-title" class="saved__title">Your Collections</h1>
       </div>
-    </div>
+
+      @if (!loading && savedRecipes.length) {
+        <p class="tag tag--yolk saved__count">
+          {{ savedRecipes.length }} saved
+        </p>
+      }
+    </header>
+
+    @if (errorMessage && savedRecipes.length) {
+      <div class="alert alert-danger" role="alert">{{ errorMessage }}</div>
+    }
+
+    @if (loading) {
+
+      <div class="state" role="status">
+        <span class="loader" aria-hidden="true"></span>
+        <p class="state__text">Loading your collection…</p>
+      </div>
+
+    } @else if (errorMessage && !savedRecipes.length) {
+
+      <div class="state" role="alert">
+        <p class="state__title">Something went wrong</p>
+        <p class="state__text">{{ errorMessage }}</p>
+        <button type="button" class="btn-cwm btn-cwm--ink" (click)="retry()">Try again</button>
+      </div>
+
+    } @else if (!savedRecipes.length) {
+
+      <div class="state saved__empty">
+        <p class="state__title">Nothing saved yet</p>
+        <p class="state__text">You haven't saved any recipes yet.</p>
+        <a routerLink="/all-recipes" class="btn-cwm">Browse recipes</a>
+      </div>
+
+    } @else {
+
+      <ul class="saved__grid">
+        @for (recipe of savedRecipes; track recipe._id; let i = $index) {
+          <li class="tile">
+
+            <div class="tile__photo photo photo--offset">
+              <img
+                appImgFallback
+                [src]="recipe.image || plate"
+                [alt]="'Photo of ' + recipe.name"
+                loading="lazy"
+              />
+            </div>
+
+            <span class="tile__n numeral" aria-hidden="true">{{ i + 1 < 10 ? '0' : '' }}{{ i + 1 }}</span>
+
+            <!-- DELETE (sits above the tile's full-card link) -->
+            <button
+              type="button"
+              class="tile__remove"
+              (click)="removeRecipe(recipe._id)"
+              [attr.aria-label]="'Remove ' + recipe.name + ' from your collection'"
+            >
+              <i class="bi bi-trash" aria-hidden="true"></i>
+            </button>
+
+            <h2 class="tile__name display-xs">
+              <a class="tile__link" [routerLink]="['/view-recipe', recipe.recipeId]">
+                {{ recipe.name }}
+              </a>
+            </h2>
+
+          </li>
+        }
+      </ul>
+
+    }
 
   </div>
-</div>
+</section>

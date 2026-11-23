@@ -1,0 +1,119 @@
+/* Shared poster layout for Login + Register.
+   Paper-red field, big display headline on the left, a cream form panel with a
+   hard yolk offset on the right, and a platter motif (concentric rings) behind. */
+:host {
+  display: block;
+}
+
+.auth {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: calc(100svh - var(--header-h));
+  padding-block: clamp(2.5rem, 6vw, 5rem) clamp(3rem, 7vw, 6rem);
+  overflow: hidden;
+}
+
+/* Decorative tabletop: a deeper-red disc ringed in cream — hard edges only. */
+.auth__platter {
+  position: absolute;
+  left: -14%;
+  bottom: -74%;
+  width: min(48rem, 100vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 0 0 clamp(8px, 1.2vw, 16px) var(--paper), 0 0 0 clamp(11px, 1.6vw, 21px) var(--ink);
+  pointer-events: none;
+}
+
+.auth__platter::before {
+  content: '';
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  border: var(--rule) solid var(--paper);
+}
+
+.auth__grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .auth__grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  }
+}
+
+.auth__title {
+  margin-bottom: 1.25rem;
+  font-size: clamp(2.75rem, 7.5vw, 6rem);
+  line-height: 0.9;
+  overflow-wrap: break-word;
+}
+
+.auth__lede {
+  margin-bottom: 0;
+}
+
+/* ---- Form panel ---- */
+.auth__panel {
+  width: 100%;
+  max-width: 34rem;
+  justify-self: start;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  background: var(--ink);
+  color: var(--broth);
+  border: var(--rule) solid var(--broth);
+  box-shadow: 8px 8px 0 var(--yolk);
+}
+
+@media (min-width: 600px) {
+  .auth__panel {
+    box-shadow: 12px 12px 0 var(--yolk);
+  }
+}
+
+@media (min-width: 900px) {
+  .auth__panel {
+    justify-self: end;
+  }
+}
+
+.auth__panel-title {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.9rem;
+  border-bottom: var(--rule) solid var(--broth);
+}
+
+.auth__field {
+  margin-bottom: 1.1rem;
+}
+
+.auth__submit {
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
+@media (min-width: 600px) {
+  .auth__submit {
+    width: auto;
+    min-width: 12rem;
+  }
+}
+
+.auth__switch {
+  margin: 1.5rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--broth) 30%, transparent);
+  font-size: 0.95rem;
+}
+
+.auth__switch a {
+  font-weight: 800;
+}
