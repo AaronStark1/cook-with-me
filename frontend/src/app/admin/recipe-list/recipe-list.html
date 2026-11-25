@@ -1,57 +1,95 @@
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <button class="btn btn-success fw-semibold"
-  routerLink="/admin/recipe/add"
-  >
-    Add Recipe
-  </button>
+<header class="page-head">
+  <div>
+    <p class="kicker">Manage</p>
+    <h1>Recipes</h1>
+  </div>
+  <a class="btn-cwm" routerLink="/admin/recipe/add">
+    <i class="bi bi-plus-lg" aria-hidden="true"></i> Add Recipe
+  </a>
+</header>
 
+<div class="toolbar">
+  <label for="recipe-search" class="visually-hidden">Search recipes</label>
   <input
-    type="text"
-    class="form-control w-25 rounded-pill px-4"
+    id="recipe-search"
+    type="search"
+    class="form-control"
     placeholder="Search Recipe"
+    aria-label="Search recipes"
+    [(ngModel)]="searchKey"
   />
+  <p class="label muted mb-0" aria-live="polite">{{ (recipes | search: searchKey).length }} of {{ recipes.length }} shown</p>
 </div>
 
-<div class="card shadow-sm rounded-4">
-  <table class="table align-middle mb-0">
-    <thead class="table-light">
-      <tr>
-        <th>#</th>
-        <th>Name</th>
-        <th>Image</th>
-        <th>Cuisine</th>
-        <th>Action</th>
-      </tr>
-    </thead>
+@if (errorMessage) {
+  <div class="alert alert-danger" role="alert">{{ errorMessage }}</div>
+}
 
-    <tbody>
-      <tr *ngFor="let recipe of recipes; index as i">
-        <td>{{ i + 1 }}</td>
-        <td class="fw-semibold">{{ recipe.name }}</td>
-        <td>
-          <img
-            [src]="recipe.image"
-            width="60"
-            class="rounded"
-          />
-        </td>
-        <td>{{ recipe.cuisine }}</td>
-<td>
-  <button
-    class="btn btn-link text-primary"
-    [routerLink]="['/admin/recipe/edit', recipe._id]"
-  >
-    <i class="bi bi-pencil-fill"></i>
-  </button>
+<section class="panel" aria-label="Recipe list">
 
-  <button
-    class="btn btn-link text-danger"
-    (click)="deleteRecipe(recipe._id)"
-  >
-    <i class="bi bi-trash-fill"></i>
-  </button>
-</td>
+  @if (loading) {
+    <div class="state" role="status">
+      <span class="loader" aria-hidden="true"></span>
+      <p class="state__text">Loading recipes…</p>
+    </div>
+  } @else {
+    <div class="table-responsive" role="region" aria-label="Recipes table" tabindex="0">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Name</th>
+            <th scope="col">Image</th>
+            <th scope="col">Cuisine</th>
+            <th scope="col" class="text-end">Action</th>
+          </tr>
+        </thead>
 
-    </tbody>
-  </table>
-</div>
+        <tbody appRowsIn>
+          @for (recipe of recipes | search: searchKey; track recipe._id; let i = $index) {
+            <tr [class.is-leaving]="leaving.has(recipe._id)">
+              <td class="num">{{ i + 1 }}</td>
+              <td class="fw-semibold">{{ recipe.name }}</td>
+              <td>
+                <img
+                  class="thumb"
+                  appImgFallback
+                  [src]="recipe.image"
+                  [alt]="recipe.name"
+                  width="64"
+                  height="64"
+                />
+              </td>
+              <td>{{ recipe.cuisine }}</td>
+              <td>
+                <div class="row-actions">
+                  <a
+                    class="btn-cwm btn-cwm--ink btn-cwm--sm"
+                    [routerLink]="['/admin/recipe/edit', recipe._id]"
+                    [attr.aria-label]="'Edit ' + recipe.name"
+                  >
+                    <i class="bi bi-pencil-fill" aria-hidden="true"></i> Edit
+                  </a>
+
+                  <button
+                    type="button"
+                    class="btn-cwm btn-cwm--red btn-cwm--sm"
+                    (click)="deleteRecipe(recipe._id)"
+                    [attr.aria-label]="'Delete ' + recipe.name"
+                  >
+                    <i class="bi bi-trash-fill" aria-hidden="true"></i> Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="text-center muted py-4">No recipes found.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+</section>

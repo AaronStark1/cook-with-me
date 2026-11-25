@@ -1,0 +1,93 @@
+<div class="hero__dishes" [class.is-dragging]="dragging()">
+
+  <!-- ghost word: the cuisine, huge and tonal, behind the dishes (decorative) -->
+  @for (id of slotIds; track id) {
+    <div class="lyr lyr--word" data-layer="word" [attr.data-slot]="id" [class.is-off]="!visible(id)" aria-hidden="true">
+      <div class="lyr__move intro-slide" style="--intro-f: 0.4">
+        <span class="ghost" [style]="ghostStyle(id)">{{ scene(id).word }}</span>
+      </div>
+    </div>
+  }
+
+  <!-- top-down tabletop / platter (decorative) -->
+  <div class="hero__disc intro-slide" style="--intro-f: 0.3" aria-hidden="true">
+    <div class="hero__rotor">
+      <span class="hero__ring hero__ring--a"></span>
+      <span class="hero__ring hero__ring--b"></span>
+      <span class="hero__ring hero__ring--c"></span>
+    </div>
+  </div>
+
+  @for (dish of dishes(); track dish.slot) {
+    <div
+      class="dish intro-slide"
+      style="--intro-f: 0.15"
+      [class.is-active]="dish.rel === 0"
+      [attr.aria-hidden]="dish.rel === 0 ? null : 'true'"
+      [style.--theta]="dish.theta + 'deg'"
+      [style.--s]="dish.scale"
+      [style.opacity]="dish.opacity"
+      [style.z-index]="dish.z"
+    >
+      <span class="dish__shadow" aria-hidden="true"></span>
+      <img
+        class="dish__img"
+        appImgFallback
+        [src]="dish.recipe.image || plate"
+        [alt]="dish.rel === 0 ? (dish.recipe.name ?? 'Featured recipe') : ''"
+        width="640"
+        height="640"
+        decoding="async"
+        draggable="false"
+      />
+      @if (dish.rel === 0) {
+        <!-- mouse convenience only: keyboard and screen-reader users use "View recipe" in the info block -->
+        <a class="dish__link" appCursorTag="View →" [routerLink]="['/view-recipe', dish.recipe._id]" aria-hidden="true" tabindex="-1" draggable="false"></a>
+      }
+    </div>
+  }
+
+  @if (empty()) {
+    <!-- No recipes yet: a complete static hero — an empty plate, no dead links. -->
+    <div class="dish is-active dish--static intro-slide" style="--intro-f: 0.15" aria-hidden="true">
+      <img class="dish__img" [src]="plate" alt="" width="640" height="640" />
+    </div>
+  }
+
+  <!-- garnish stickers + blurred foreground props: two arrangements that alternate (decorative) -->
+  @for (id of slotIds; track id) {
+    <div class="lyr lyr--garnish" data-layer="garnish" [attr.data-slot]="id" [class.is-off]="!visible(id)" aria-hidden="true">
+      <div class="lyr__move intro-slide" style="--intro-f: 0.55">
+        @for (name of scene(id).garnish; track $index; let i = $index) {
+          @let p = layouts[id].garnish[i];
+          @let b = bobs[id][i];
+          <app-garnish
+            class="piece bob"
+            [name]="name"
+            [style.--x]="p.x" [style.--y]="p.y" [style.--sz]="p.size" [style.--r]="p.rot + 'deg'"
+            [style.--mx]="p.mx" [style.--my]="p.my" [style.--msz]="p.msize"
+            [style.--bob-dur]="b.dur" [style.--bob-delay]="b.delay"
+          />
+        }
+      </div>
+    </div>
+    <div class="lyr lyr--props" data-layer="props" [attr.data-slot]="id" [class.is-off]="!visible(id)" aria-hidden="true">
+      <div class="lyr__move intro-slide" style="--intro-f: 0.75">
+        @for (p of layouts[id].props; track $index; let i = $index) {
+          @let name = scene(id).props[i];
+          @let b = bobs[id === 'a' ? 'pa' : 'pb'][i];
+          @if (name) {
+            <app-garnish
+              class="piece piece--prop bob"
+              [name]="name"
+              [style.--x]="p.x" [style.--y]="p.y" [style.--sz]="p.size" [style.--r]="p.rot + 'deg'"
+              [style.--mx]="p.mx" [style.--my]="p.my" [style.--msz]="p.msize"
+              [style.--bob-dur]="b.dur" [style.--bob-delay]="b.delay"
+            />
+          }
+        }
+      </div>
+    </div>
+  }
+
+</div>

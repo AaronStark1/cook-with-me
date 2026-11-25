@@ -1,0 +1,481 @@
+/* Sticky header: a strong cream rule under a flat tomato bar.
+   Its height never changes (--header-h drives sticky offsets across the app). */
+:host {
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  /* the header stays rock-still while pages wipe underneath it */
+  view-transition-name: site-header;
+}
+
+.site-header {
+  position: relative;
+  background: var(--paper);
+  color: var(--ink);
+  border-bottom: var(--rule) solid var(--ink);
+  transition: box-shadow 160ms var(--ease);
+}
+
+/* scrolled: a hard broth drop, no blur */
+:host(.is-stuck) .site-header {
+  box-shadow: 0 6px 0 var(--broth);
+}
+
+.site-header__bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-height: var(--header-h);
+}
+
+/* (the scroll-progress line, .site-header__progress, is styled in motion.css) */
+
+/* ---- Wordmark: COOK + a yolk block saying WITH ME ---- */
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  line-height: 1;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.wordmark:hover {
+  text-decoration: none;
+}
+
+.wordmark__b {
+  padding: 0.28em 0.4em 0.2em;
+  background: var(--yolk);
+  color: var(--broth);
+  transition: translate 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+
+.wordmark:hover .wordmark__b,
+.wordmark:focus-visible .wordmark__b {
+  translate: 4px 0;
+  box-shadow: -4px 4px 0 var(--broth);
+}
+
+/* ---- Primary nav (desktop) ---- */
+.site-nav {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.site-nav__list {
+  position: relative;
+  display: flex;
+  gap: clamp(1rem, 2.4vw, 2.25rem);
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.site-nav__list a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--header-h);
+  font: 800 0.8125rem/1 var(--font-body);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+/* Fallback (bar not measured yet / no JS): each link draws its own bar. */
+.site-nav__list a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--rule) * -1);
+  height: 6px;
+  background: var(--yolk);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.18s var(--ease);
+}
+
+.site-nav__list a:hover::after,
+.site-nav__list a.is-active::after {
+  transform: scaleX(1);
+}
+
+@media (min-width: 992px) {
+  /* ONE yolk bar sitting on the header rule: it glides to the active link, and previews
+     the link under the pointer. Placed without animation first; `.is-ready` enables the glide. */
+  .site-nav__list.has-bar a::after {
+    content: none;
+  }
+
+  .site-nav__list.has-bar::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: calc(var(--rule) * -1);
+    width: 1px;
+    height: 6px;
+    background: var(--yolk);
+    transform: translateX(var(--bar-x, 0px)) scaleX(var(--bar-w, 0));
+    transform-origin: left center;
+    pointer-events: none;
+  }
+
+  .site-nav__list.is-ready::after {
+    transition: transform 0.6s var(--ease-glide);
+  }
+}
+
+/* ---- Account ---- */
+.account {
+  position: relative;
+  flex: none;
+}
+
+.account__guest {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.account__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  max-width: 14rem;
+  padding: 0.4rem 0.9rem;
+  font: 800 0.8125rem/1 var(--font-body);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: transparent;
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease), color var(--dur-micro) var(--ease);
+}
+
+.account__toggle:hover,
+.account__toggle[aria-expanded='true'] {
+  background: var(--ink);
+  color: var(--broth);
+}
+
+.account__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account__chevron {
+  font-size: 0.7rem;
+  transition: transform 0.15s var(--ease);
+}
+
+.account__toggle[aria-expanded='true'] .account__chevron {
+  transform: rotate(180deg);
+}
+
+/* The menu wipes open top → bottom. `visibility` keeps it out of the tab order and the
+   accessibility tree while closed, exactly as `display: none` did. */
+.account__menu {
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  right: 0;
+  z-index: 60;
+  min-width: 15rem;
+  background: var(--broth);
+  color: var(--ink);
+  border: var(--rule) solid var(--ink);
+  visibility: hidden;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path var(--dur-ui) var(--ease), visibility 0s linear var(--dur-ui);
+}
+
+.account__menu.is-open {
+  visibility: visible;
+  clip-path: inset(0 0 0 0);
+  transition-delay: 0s;
+}
+
+.account__who {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  color: var(--muted);
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 35%, transparent);
+}
+
+.account__menu ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.account__menu a,
+.account__menu button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.6rem 1rem;
+  font: 700 0.9rem/1.2 var(--font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.account__menu a:hover,
+.account__menu button:hover {
+  background: var(--yolk);
+  color: var(--broth);
+}
+
+@media (min-width: 992px) {
+  /* the "signed in as" caption is only needed in the stacked mobile panel */
+  .account__who {
+    display: none;
+  }
+
+  /* items follow the wipe down, 30 ms apart */
+  .account__menu li {
+    opacity: 0;
+    translate: 0 -6px;
+    transition: opacity var(--dur-ui) var(--ease), translate var(--dur-ui) var(--ease);
+  }
+
+  .account__menu.is-open li {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  .account__menu.is-open li:nth-child(1) { transition-delay: 40ms; }
+  .account__menu.is-open li:nth-child(2) { transition-delay: 70ms; }
+  .account__menu.is-open li:nth-child(3) { transition-delay: 100ms; }
+  .account__menu.is-open li:nth-child(4) { transition-delay: 130ms; }
+}
+
+/* ---- Mobile / tablet: a disclosure panel under the header ---- */
+.site-header__toggle {
+  display: none;
+}
+
+@media (max-width: 991.98px) {
+  .site-header__bar {
+    flex-wrap: nowrap;
+  }
+
+  .site-header__toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 44px;
+    padding: 0.4rem 0.9rem;
+    font: 800 0.8125rem/1 var(--font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: transparent;
+    border: 2px solid var(--ink);
+    cursor: pointer;
+  }
+
+  .site-header__toggle[aria-expanded='true'] {
+    background: var(--ink);
+    color: var(--broth);
+  }
+
+  /* three hard bars that fold into an ✕ */
+  .site-header__toggle-bars {
+    position: relative;
+    width: 1.1rem;
+    height: 0.8rem;
+  }
+
+  .site-header__toggle-bars::before,
+  .site-header__toggle-bars::after,
+  .site-header__toggle-bars > span {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(50% - 1px);
+    height: 2px;
+    background: currentColor;
+    transition: transform var(--dur-ui) var(--ease), opacity var(--dur-micro) linear;
+  }
+
+  .site-header__toggle-bars::before { transform: translateY(-0.34rem); }
+  .site-header__toggle-bars::after { transform: translateY(0.34rem); }
+
+  [aria-expanded='true'] > .site-header__toggle-bars > span { transform: scaleX(0); opacity: 0; }
+  [aria-expanded='true'] > .site-header__toggle-bars::before { transform: rotate(45deg); }
+  [aria-expanded='true'] > .site-header__toggle-bars::after { transform: rotate(-45deg); }
+
+  /* the panel wipes down from the header */
+  .site-nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--broth);
+    color: var(--ink);
+    border-bottom: var(--rule) solid var(--yolk);
+    max-height: calc(100dvh - var(--header-h));
+    overflow-y: auto;
+    visibility: hidden;
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path 360ms var(--ease-arrive), visibility 0s linear 360ms;
+  }
+
+  .site-nav.is-open {
+    visibility: visible;
+    clip-path: inset(0 0 0 0);
+    transition-delay: 0s;
+  }
+
+  .site-nav__list {
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+  }
+
+  .site-nav__list li {
+    overflow: clip;
+  }
+
+  .site-nav__list li + li {
+    border-top: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+  }
+
+  .site-nav__list a {
+    display: flex;
+    width: 100%;
+    min-height: 60px;
+    padding-inline: var(--gutter);
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 400;
+    letter-spacing: 0;
+    /* links rise from behind their row's bottom edge, 45 ms apart */
+    translate: 0 105%;
+    transition: translate 520ms var(--ease-arrive);
+  }
+
+  .site-nav.is-open .site-nav__list a {
+    translate: 0 0;
+  }
+
+  .site-nav.is-open li:nth-child(1) a { transition-delay: 60ms; }
+  .site-nav.is-open li:nth-child(2) a { transition-delay: 105ms; }
+  .site-nav.is-open li:nth-child(3) a { transition-delay: 150ms; }
+  .site-nav.is-open li:nth-child(4) a { transition-delay: 195ms; }
+
+  .site-nav__list a::after {
+    left: 0;
+    right: auto;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    height: auto;
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+
+  .site-nav__list a:hover::after,
+  .site-nav__list a.is-active::after {
+    transform: scaleY(1);
+  }
+
+  .account {
+    border-top: var(--rule) solid var(--ink);
+    padding: 1rem var(--gutter) 1.25rem;
+  }
+
+  .account__guest {
+    flex-wrap: wrap;
+  }
+
+  .account__guest .btn-cwm {
+    flex: 1;
+  }
+
+  /* signed-in menu is always expanded inside the panel */
+  .account__toggle {
+    display: none;
+  }
+
+  .account__menu {
+    position: static;
+    min-width: 0;
+    background: transparent;
+    border: 0;
+    visibility: inherit;
+    clip-path: none;
+    transition: none;
+  }
+
+  .account__who {
+    padding: 0 0 0.5rem;
+    border: 0;
+  }
+
+  .account__menu a,
+  .account__menu button {
+    padding-inline: 0;
+  }
+
+  .account__menu a:hover,
+  .account__menu button:hover {
+    padding-inline: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header,
+  .site-header *,
+  .site-header *::before,
+  .site-header *::after {
+    transition: none !important;
+  }
+
+  .wordmark:hover .wordmark__b,
+  .wordmark:focus-visible .wordmark__b {
+    translate: none;
+  }
+}
+
+/* smallest phones (320px): keep wordmark + MENU on one row */
+@media (max-width: 360px) {
+  .wordmark {
+    font-size: 1.05rem;
+  }
+
+  .site-header__bar {
+    gap: 0.75rem;
+  }
+
+  .site-header__toggle {
+    padding-inline: 0.65rem;
+    letter-spacing: 0.1em;
+  }
+}

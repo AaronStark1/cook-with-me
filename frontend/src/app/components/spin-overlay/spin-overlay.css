@@ -1,0 +1,181 @@
+.spin {
+  width: min(100vw - 2rem, 52rem);
+  max-width: none;
+  max-height: calc(100dvh - 2rem);
+  padding: 0;
+  overflow: auto;
+  color: var(--ink);
+  background: var(--paper);
+  border: var(--rule) solid var(--ink);
+  box-shadow: 10px 10px 0 var(--yolk);
+}
+
+/* flat broth scrim — no blur, no glass */
+.spin::backdrop {
+  background: color-mix(in srgb, var(--broth) 82%, transparent);
+}
+
+.spin[open] {
+  animation: spin-in 360ms var(--ease-arrive) both;
+}
+
+@keyframes spin-in {
+  from { clip-path: inset(0 0 100% 0); translate: 0 16px; }
+  to { clip-path: inset(-20px -20px -20px -20px); translate: 0 0; }
+}
+
+.spin__panel {
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.spin__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: clamp(1rem, 3vw, 1.75rem);
+  padding-bottom: 0.9rem;
+  border-bottom: var(--rule) solid var(--ink);
+}
+
+.spin__x {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: var(--broth);
+  background: var(--ink);
+  border: 2px solid var(--broth);
+  cursor: pointer;
+}
+
+.spin__x:hover {
+  background: var(--yolk);
+}
+
+/* ---- the wheel ---- */
+.spin__stage {
+  --w: min(74vw, 54svh, 26rem);
+
+  position: relative;
+  width: var(--w);
+  margin: 1.5rem auto 0;
+}
+
+.spin__disc {
+  position: relative;
+  width: var(--w);
+  height: var(--w);
+  border-radius: 50%;
+  background: var(--broth);
+}
+
+.spin__rule {
+  position: absolute;
+  inset: 5%;
+  border: 4px dashed var(--yolk);
+  border-radius: 50%;
+}
+
+.spin__ring {
+  position: absolute;
+  inset: 0;
+}
+
+.spin__dish {
+  position: absolute;
+  left: 38%;
+  top: 38%;
+  width: 24%;
+  height: 24%;
+  /* ride the ring: rotate out, move up the radius, turn back upright */
+  transform: rotate(var(--a)) translateY(-152%) rotate(calc(var(--a) * -1));
+}
+
+.spin__dish img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--ink);
+  background: var(--ink);
+}
+
+.spin__hub {
+  position: absolute;
+  inset: 41%;
+  border-radius: 50%;
+  background: var(--yolk);
+  border: 3px solid var(--ink);
+}
+
+/* fixed marker at 12 o'clock: a hard yolk wedge */
+.spin__marker {
+  position: absolute;
+  left: 50%;
+  top: -1.1rem;
+  z-index: 2;
+  width: 2rem;
+  height: 1.7rem;
+  margin-left: -1rem;
+  background: var(--yolk);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+.spin__hint {
+  margin: 1.25rem 0 0;
+  text-align: center;
+}
+
+/* ---- the result ---- */
+.spin__result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(1.25rem, 3vw, 2rem);
+  align-items: center;
+}
+
+@media (min-width: 640px) {
+  .spin__result {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  }
+}
+
+.spin__photo {
+  margin: 0 10px 10px 0;
+  animation: spin-photo 520ms var(--ease-wipe) both;
+}
+
+@keyframes spin-photo {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(-12px -12px -12px -12px); }
+}
+
+.spin__name {
+  margin: 0 0 1rem;
+  font-size: clamp(1.35rem, 2.6vw, 2.1rem);
+  overflow-wrap: break-word;
+}
+
+.spin__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.spin__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin[open],
+  .spin__photo {
+    animation: none;
+  }
+}

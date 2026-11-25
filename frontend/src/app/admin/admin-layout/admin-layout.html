@@ -1,57 +1,77 @@
-<div class="d-flex min-vh-100">
+<div class="admin">
 
-  <!-- SIDEBAR -->
-  <aside class="bg-warning text-dark p-3" style="width: 260px;">
-    <div class="text-center mb-4">
-      <div class="bg-light rounded-4 p-3">
-        <i class="bi bi-person-circle fs-1"></i>
-        <h6 class="mt-2 fw-bold">Admin Panel</h6>
-        <small>CookWithMe</small>
-      </div>
+  <!-- SIDEBAR (becomes a top bar with a menu toggle below 768px) -->
+  <aside class="admin__side">
+
+    <div class="admin__brand">
+      <a class="wordmark" routerLink="/admin" aria-label="Cook With Me — admin dashboard">
+        <span class="wordmark__a">Cook</span><span class="wordmark__b">With Me</span>
+      </a>
+
+      <span class="tag admin__badge">Admin</span>
+
+      <button
+        #navToggle
+        type="button"
+        class="admin__toggle"
+        [attr.aria-expanded]="navOpen()"
+        aria-controls="admin-nav"
+        (click)="toggleNav()"
+      >
+        {{ navOpen() ? 'Close' : 'Menu' }}
+      </button>
     </div>
 
-    <ul class="nav flex-column gap-2">
-      <li class="nav-item">
-        <a routerLink="/admin" class="nav-link text-dark fw-semibold">
-          <i class="bi bi-speedometer2 me-2"></i> Dashboard
-        </a>
-      </li>
-      <li class="nav-item">
-<a
-  routerLink="/admin/recipelist"
-  class="nav-link text-dark fw-semibold"
->
-  <i class="bi bi-egg-fried me-2"></i> Recipes
-</a>
+    <nav id="admin-nav" class="admin__nav" [class.is-open]="navOpen()" aria-label="Admin">
+      <p class="admin__who label">Signed in as {{ auth.user()?.username || 'admin' }}</p>
 
-      </li>
-      <li class="nav-item">
-        <a
-        routerLink="/admin/userslist"
-        class="nav-link text-dark">
-          <i class="bi bi-people me-2"></i> Users
-        </a>
-      </li>
-      <li class="nav-item">
-        <a
-        routerLink="/admin/downloadlist"
-         class="nav-link text-dark">
-          <i class="bi bi-download me-2"></i> Downloads
-        </a>
-      </li>
-      <li class="nav-item">
-        <a
-        routerLink="/admin/requestlist"
-         class="nav-link text-dark">
-          <i class="bi bi-inbox me-2"></i> Requests
-        </a>
-      </li>
-    </ul>
+      <ul #navList>
+        <li>
+          <a routerLink="/admin" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
+            <i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard
+          </a>
+        </li>
+        <li>
+          <a routerLink="/admin/recipelist" routerLinkActive="is-active" ariaCurrentWhenActive="page">
+            <i class="bi bi-egg-fried" aria-hidden="true"></i> Recipes
+          </a>
+        </li>
+        <li>
+          <a routerLink="/admin/userslist" routerLinkActive="is-active" ariaCurrentWhenActive="page">
+            <i class="bi bi-people" aria-hidden="true"></i> Users
+          </a>
+        </li>
+        <li>
+          <a routerLink="/admin/downloadlist" routerLinkActive="is-active" ariaCurrentWhenActive="page">
+            <i class="bi bi-download" aria-hidden="true"></i> Downloads
+          </a>
+        </li>
+        <li>
+          <a routerLink="/admin/requestlist" routerLinkActive="is-active" ariaCurrentWhenActive="page">
+            <i class="bi bi-inbox" aria-hidden="true"></i> Requests
+          </a>
+        </li>
+      </ul>
+
+      <ul class="admin__nav-foot">
+        <li>
+          <a routerLink="/">
+            <i class="bi bi-house" aria-hidden="true"></i> View site
+          </a>
+        </li>
+        <li>
+          <button type="button" (click)="logout()">
+            <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Logout
+          </button>
+        </li>
+      </ul>
+    </nav>
+
   </aside>
 
-  <!-- CONTENT -->
-  <main class="flex-grow-1 p-4 bg-light">
+  <!-- CONTENT (App already wraps the router outlet in <main id="main">) -->
+  <div class="admin__content">
     <router-outlet></router-outlet>
-  </main>
+  </div>
 
 </div>

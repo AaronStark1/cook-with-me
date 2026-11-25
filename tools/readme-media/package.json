@@ -1,0 +1,13 @@
+{
+  "name": "cook-with-me-readme-media",
+  "private": true,
+  "type": "module",
+  "description": "Films the running Cook With Me app under virtual time with Playwright and cuts the README media (title card, animated WebP clips, screens) into ../../docs/readme/ with ffmpeg.",
+  "scripts": {
+    "readme": "node readme-media.mjs"
+  },
+  "devDependencies": {
+    "ffmpeg-static": "5.3.0",
+    "playwright-core": "1.64.1"
+  }
+}

@@ -1,0 +1,148 @@
+/* Turntable internals. The host (.asm__table) is sized and given its perspective by the demo. */
+.asm__cam,
+.asm__plate {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+/* the hand-set camera (Explore, angle buttons): written as custom properties, no re-render */
+.asm__cam {
+  transform: rotateX(var(--ex, 0deg)) rotateZ(var(--ez, 0deg));
+  transition: transform 0.5s var(--ease-glide);
+}
+
+:host-context(.asm__stage.is-turning) .asm__cam {
+  transition: none;
+}
+
+.asm__shadow,
+.asm__slice,
+.asm__face,
+.asm__photo,
+.asm__iris {
+  position: absolute;
+  border-radius: 50%;
+}
+
+/* contact shadow: a flat broth ellipse under the plate */
+.asm__shadow {
+  inset: 5% -3% -7% 5%;
+  background: color-mix(in srgb, var(--broth) 24%, transparent);
+  transform: translateZ(-14px);
+  filter: blur(3px);
+}
+
+/* plate thickness: flat slices stepped back in Z. Invisible unless the plate is tilted. */
+.asm__slice {
+  inset: 0;
+  background: var(--ink);
+  opacity: 0;
+}
+
+.asm__slice:nth-of-type(odd) {
+  background: color-mix(in srgb, var(--ink) 88%, var(--broth));
+}
+
+:host-context(.asm__stage.is-tilted) .asm__slice {
+  opacity: 1 !important;
+  transform: translateZ(calc(var(--k) * -1.6px)) !important;
+}
+
+.asm__face {
+  inset: 0;
+  background: var(--ink);
+  border: 2px solid var(--broth);
+}
+
+/* the platter's own rules, echoing the hero */
+.asm__face::before,
+.asm__face::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+}
+
+.asm__face::before { inset: 3%; border: 3px dashed var(--yolk); }
+.asm__face::after { inset: 6.5%; border: 2px solid color-mix(in srgb, var(--broth) 30%, transparent); }
+
+.asm__photo {
+  inset: 9%;
+  overflow: hidden;
+  background: var(--ink);
+  border: 2px solid var(--broth);
+  transform: translateZ(10px);
+}
+
+.asm__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* the iris's leading edge: a 6px yolk ring */
+.asm__iris {
+  inset: 9%;
+  border: 6px solid var(--yolk);
+  opacity: 0;
+  transform: translateZ(11px);
+}
+
+/* garnish stickers standing on the rim, always turned to face the camera */
+.asm__bb {
+  position: absolute;
+  left: 6%;
+  top: 10%;
+  width: 21%;
+  height: 21%;
+  transform: translateZ(18px);
+  transform-style: preserve-3d;
+}
+
+.asm__bb--b {
+  left: 74%;
+  top: 70%;
+}
+
+.asm__bb-orbit,
+.asm__bb-explore {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.asm__bb-explore {
+  transform: rotateZ(calc(var(--ez, 0deg) * -1)) rotateX(calc(var(--ex, 0deg) * -1));
+  transition: transform 0.5s var(--ease-glide);
+}
+
+:host-context(.asm__stage.is-turning) .asm__bb-explore {
+  transition: none;
+}
+
+/* the join burst: eight hard squares, shown only while their animation runs */
+.asm__spark {
+  position: absolute;
+  left: calc(50% - 0.45rem);
+  top: calc(50% - 0.45rem);
+  width: 0.9rem;
+  height: 0.9rem;
+  background: var(--yolk);
+  opacity: 0;
+  transform: translateZ(24px);
+}
+
+.asm__spark.is-ink { background: var(--ink); }
+.asm__spark.is-broth { background: var(--broth); }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .asm__cam,
+  .asm__bb-explore {
+    transition: none;
+  }
+}

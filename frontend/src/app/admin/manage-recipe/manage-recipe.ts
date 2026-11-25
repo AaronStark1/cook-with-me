@@ -1,27 +1,48 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { HttpErrorResponse } from '@angular/common/http';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { finalize, map } from 'rxjs';
 import { Apiservice } from '../../services/apiservice';
-import { RecipeModel } from '../../models/recipe-model';
+
+const DIFFICULTIES = ['Easy', 'Medium', 'Hard'];
 
 @Component({
   selector: 'app-manage-recipe',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './manage-recipe.html',
   styleUrl: './manage-recipe.css',
 })
 export class ManageRecipe implements OnInit {
 
-  recipeDetails: RecipeModel = {};
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly fb = inject(FormBuilder);
+
+  readonly difficulties = DIFFICULTIES;
+
+  form = this.fb.group({
+    name: ['', [Validators.required, Validators.maxLength(200)]],
+    cookTimeMinutes: [null as number | null, [Validators.required, Validators.min(0)]],
+    prepTimeMinutes: [null as number | null, [Validators.required, Validators.min(0)]],
+    servings: [null as number | null, [Validators.required, Validators.min(1)]],
+    cuisine: ['', [Validators.required, Validators.maxLength(100)]],
+    difficulty: ['', [Validators.required]],
+    image: ['', [Validators.required]],
+    caloriesPerServing: [null as number | null, [Validators.required, Validators.min(0)]],
+  });
+
   ingredientsArray: string[] = [];
   instructionsArray: string[] = [];
   mealTypeArray: string[] = [];
-  cuisineArray: string[] = [];
+  cuisineSuggestions: string[] = [];
 
-  recipeId: string = "";
-  recipes: any[] = [];
+  recipeId = '';
+  submitted = false;
+  saving = false;
+  loadingRecipe = false;
+  errorMessages: string[] = [];
 
   constructor(
     private api: Apiservice,
@@ -30,65 +51,80 @@ export class ManageRecipe implements OnInit {
   ) {}
 
   ngOnInit(): void {
-
-    // Get route param first
-    this.ar.params.subscribe((res: any) => {
-      this.recipeId = res['id'] || "";
-      this.getAllRecipes();
+    this.ar.paramMap.pipe(
+      map(params => params.get('id') ?? ''),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(id => {
+      this.recipeId = id;
+      if (id) {
+        this.loadRecipe(id);
+      }
     });
 
+    this.loadCuisineSuggestions();
   }
 
   // ==============================
-  // LOAD ALL RECIPES
+  // LOAD DATA
   // ==============================
 
-  getAllRecipes() {
-
-    this.api.getRecipeAPI().subscribe({
-      next: (res: any) => {
-
-        this.recipes = res.response || [];
-
-        // Populate cuisine dropdown
-        this.recipes.forEach((item: any) => {
-          if (!this.cuisineArray.includes(item.cuisine)) {
-            this.cuisineArray.push(item.cuisine);
-          }
+  /** Edit mode: fetch just the one recipe being edited. */
+  private loadRecipe(id: string) {
+    this.loadingRecipe = true;
+    this.api.viewRecipeAPI(id).pipe(
+      finalize(() => this.loadingRecipe = false),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: (recipe) => {
+        this.form.patchValue({
+          name: recipe.name ?? '',
+          cookTimeMinutes: recipe.cookTimeMinutes ?? null,
+          prepTimeMinutes: recipe.prepTimeMinutes ?? null,
+          servings: recipe.servings ?? null,
+          cuisine: recipe.cuisine ?? '',
+          difficulty: this.canonicalDifficulty(recipe.difficulty),
+          image: recipe.image ?? '',
+          caloriesPerServing: recipe.caloriesPerServing ?? null,
         });
-
-        // If Edit Mode → Load Recipe
-        if (this.recipeId) {
-
-          const selectedRecipe = this.recipes.find(
-            (item: any) => item._id === this.recipeId
-          );
-
-          if (selectedRecipe) {
-
-            this.recipeDetails = { ...selectedRecipe };
-
-            this.ingredientsArray = [...(selectedRecipe.ingredients || [])];
-            this.instructionsArray = [...(selectedRecipe.instructions || [])];
-            this.mealTypeArray = [...(selectedRecipe.mealType || [])];
-          }
-        }
-
+        this.ingredientsArray = [...(recipe.ingredients ?? [])];
+        this.instructionsArray = [...(recipe.instructions ?? [])];
+        this.mealTypeArray = [...(recipe.mealType ?? [])];
       },
-      error: (err) => {
-        console.log("Error loading recipes", err);
+      error: () => {
+        this.errorMessages = ['Could not load this recipe. It may have been deleted.'];
       }
     });
   }
 
+  /** Cuisines already in use are only suggestions — admins can type a new one. */
+  private loadCuisineSuggestions() {
+    this.api.getRecipeAPI().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res: any) => {
+        const cuisines: string[] = (res.response ?? []).map((r: any) => r.cuisine);
+        this.cuisineSuggestions = [...new Set(cuisines)].filter(Boolean);
+      },
+      error: () => { /* suggestions are optional */ }
+    });
+  }
+
+  /** Older records may store "easy"/"EASY"; map them onto the select's options. */
+  private canonicalDifficulty(value?: string): string {
+    return DIFFICULTIES.find(d => d.toLowerCase() === (value ?? '').toLowerCase()) ?? (value ?? '');
+  }
+
+  get f() {
+    return this.form.controls;
+  }
+
   // ==============================
-  // INGREDIENTS
+  // INGREDIENTS / INSTRUCTIONS / MEAL TYPE
   // ==============================
 
-  addIngredients(input: any) {
-    if (input.value.trim()) {
-      this.ingredientsArray.push(input.value.trim());
-      input.value = "";
+  addIngredients(input: HTMLTextAreaElement) {
+    const value = input.value.trim();
+    if (value) {
+      this.ingredientsArray.push(value);
+      input.value = '';
     }
   }
 
@@ -96,14 +132,11 @@ export class ManageRecipe implements OnInit {
     this.ingredientsArray.splice(index, 1);
   }
 
-  // ==============================
-  // INSTRUCTIONS
-  // ==============================
-
-  addInstructions(input: any) {
-    if (input.value.trim()) {
-      this.instructionsArray.push(input.value.trim());
-      input.value = "";
+  addInstructions(input: HTMLTextAreaElement) {
+    const value = input.value.trim();
+    if (value) {
+      this.instructionsArray.push(value);
+      input.value = '';
     }
   }
 
@@ -111,14 +144,11 @@ export class ManageRecipe implements OnInit {
     this.instructionsArray.splice(index, 1);
   }
 
-  // ==============================
-  // MEAL TYPE
-  // ==============================
-
-  addMeal(input: any) {
-    if (input.value.trim() && !this.mealTypeArray.includes(input.value.trim())) {
-      this.mealTypeArray.push(input.value.trim());
-      input.value = "";
+  addMeal(input: HTMLInputElement) {
+    const value = input.value.trim();
+    if (value && !this.mealTypeArray.includes(value)) {
+      this.mealTypeArray.push(value);
+      input.value = '';
     }
   }
 
@@ -127,43 +157,40 @@ export class ManageRecipe implements OnInit {
   }
 
   // ==============================
-  // ADD RECIPE
+  // SAVE (add or edit)
   // ==============================
 
-  addRecipe() {
+  save() {
+    this.submitted = true;
+    this.errorMessages = [];
 
-    this.recipeDetails.ingredients = this.ingredientsArray;
-    this.recipeDetails.instructions = this.instructionsArray;
-    this.recipeDetails.mealType = this.mealTypeArray;
+    const listsValid = this.ingredientsArray.length > 0 && this.instructionsArray.length > 0 && this.mealTypeArray.length > 0;
+    if (this.form.invalid || !listsValid) {
+      return;
+    }
 
-    this.api.addRecipeAPI(this.recipeDetails).subscribe({
-      next: (res: any) => {
-        alert("Recipe Added Successfully");
-        this.router.navigateByUrl('/admin/recipelist');
-      },
-      error: (err) => {
-        console.log(err);
-      }
-    });
-  }
+    const payload = {
+      ...this.form.getRawValue(),
+      ingredients: this.ingredientsArray,
+      instructions: this.instructionsArray,
+      mealType: this.mealTypeArray,
+    };
 
-  // ==============================
-  // EDIT RECIPE
-  // ==============================
+    const request$ = this.recipeId
+      ? this.api.updateRecipeAPI(this.recipeId, payload)
+      : this.api.addRecipeAPI(payload);
 
-  editRecipe() {
-
-    this.recipeDetails.ingredients = this.ingredientsArray;
-    this.recipeDetails.instructions = this.instructionsArray;
-    this.recipeDetails.mealType = this.mealTypeArray;
-
-    this.api.updateRecipeAPI(this.recipeId, this.recipeDetails).subscribe({
-      next: (res: any) => {
-        alert("Recipe Updated Successfully");
-        this.router.navigateByUrl('/admin/recipelist');
-      },
-      error: (err) => {
-        console.log(err);
+    this.saving = true;
+    request$.pipe(
+      finalize(() => this.saving = false),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: () => this.router.navigateByUrl('/admin/recipelist'),
+      error: (err: HttpErrorResponse) => {
+        const details: { message: string }[] = err.error?.errors ?? [];
+        this.errorMessages = details.length
+          ? details.map(d => d.message)
+          : [err.error?.message || 'Could not save the recipe. Please try again.'];
       }
     });
   }

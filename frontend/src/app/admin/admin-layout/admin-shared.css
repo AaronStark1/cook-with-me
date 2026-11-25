@@ -1,0 +1,125 @@
+/* Shared admin primitives (cream field, broth text). Unencapsulated and always prefixed with .admin. */
+.admin h1 {
+  font-size: clamp(1.75rem, 4.2vw, 3rem);
+}
+
+.admin .muted {
+  color: var(--ink-soft); /* 7.5:1 on cream */
+}
+
+/* Page head: kicker + display title on the left, actions on the right, solid rule under */
+.admin .page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  margin: 0 0 1.75rem;
+  padding-bottom: 1.1rem;
+  border-bottom: var(--rule) solid var(--broth);
+}
+
+.admin .page-head .kicker {
+  margin-bottom: 0.6rem;
+}
+
+/* Panels: hard-edged boxes that hold tables and forms */
+.admin .panel {
+  min-width: 0;
+  background: var(--ink);
+  border: 2px solid var(--broth);
+}
+
+.admin .panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 2px solid var(--broth);
+}
+
+.admin .panel__body {
+  padding: 1.25rem;
+}
+
+.admin .toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin .toolbar .form-control {
+  width: 100%;
+  max-width: 22rem;
+}
+
+/* Tables scroll inside their panel — the page itself never overflows */
+.admin .table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin .table {
+  min-width: 34rem;
+}
+
+.admin .table th,
+.admin .table td {
+  white-space: nowrap;
+}
+
+.admin .table td.wrap-cell {
+  min-width: 16rem;
+  max-width: 32rem;
+  white-space: normal;
+}
+
+.admin .num {
+  font-variant-numeric: tabular-nums;
+}
+
+.admin .mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+}
+
+.admin .row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.admin .thumb {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  background: var(--surface);
+  border: 2px solid var(--broth);
+}
+
+/* Initial block — stands in for an avatar image */
+.admin .initial {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: var(--yolk);
+  color: var(--broth);
+  border: 2px solid var(--broth);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.admin .state {
+  padding-block: 2.5rem;
+}

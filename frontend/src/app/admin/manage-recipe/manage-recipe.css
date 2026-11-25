@@ -1,0 +1,142 @@
+/* Recipe form on the cream admin field. Global .form-control/.form-label/.invalid-feedback do the heavy lifting. */
+.recipe-form {
+  max-width: 62rem;
+}
+
+.form-section {
+  min-width: 0;
+  margin: 0 0 1.5rem;
+  padding: 1.25rem;
+  border: 2px solid var(--broth);
+}
+
+.form-section > legend {
+  float: none;
+  width: auto;
+  margin: 0 0 1rem;
+  padding: 0.3rem 0.7rem;
+  background: var(--broth);
+  color: var(--ink);
+  font: 800 0.75rem/1.2 var(--font-body);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem 1.25rem;
+}
+
+.field--wide {
+  grid-column: 1 / -1;
+}
+
+/* input + Add button sit side by side; the button stays aligned with the input, not its error */
+.adder {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.adder__field {
+  flex: 1;
+  min-width: 0;
+}
+
+.adder__btn {
+  flex: none;
+  margin-top: 1.5rem; /* clears the label above the input */
+}
+
+/* Added ingredients / steps: one square row each */
+.items {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.4rem 0.5rem 0.4rem 0.9rem;
+  border: 2px solid var(--broth);
+}
+
+.item__n {
+  flex: none;
+  min-width: 1.6rem;
+  font-size: 1.4rem;
+}
+
+.item__text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Meal types: yolk chips with a labelled remove control */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 0.85rem;
+  background: var(--yolk);
+  color: var(--broth);
+  border: 2px solid var(--broth);
+  font: 800 0.75rem/1 var(--font-body);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-left: 0.5rem;
+  color: var(--broth);
+  background: transparent;
+  border: 0;
+  border-left: 2px solid var(--broth);
+  cursor: pointer;
+}
+
+.chip button:hover {
+  background: var(--broth);
+  color: var(--yolk);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+@media (max-width: 575.98px) {
+  .adder {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .adder__btn {
+    margin-top: 0;
+  }
+
+  .item {
+    flex-wrap: wrap;
+  }
+}

@@ -1,0 +1,66 @@
+@if (recipe(); as recipe) {
+  <div class="hero__info intro-rise" style="--intro-d: 570ms">
+    <div [class]="'hero__info-inner hero__info-inner--' + swap()">
+      <p class="label hero__count">
+        Featured
+        <app-odometer class="numeral hero__count-n" [value]="activeIndex() + 1" [pad]="2" /><span aria-hidden="true">/{{ count() < 10 ? '0' : '' }}{{ count() }}</span>
+      </p>
+      <p class="hero__recipe display display-sm">
+        <span class="visually-hidden">{{ recipe.name }}</span>
+        <span aria-hidden="true">
+          @for (word of words(); track $index) {
+            <span class="hi-word" [style.--i]="$index">{{ word }}</span>{{ ' ' }}
+          }
+        </span>
+      </p>
+      @if (meta().length) {
+        <ul class="hero__meta" aria-label="Recipe details">
+          @for (item of meta(); track item) {
+            <li class="tag hi-tag" [style.--i]="$index">{{ item }}</li>
+          }
+        </ul>
+      }
+      <a class="btn-cwm btn-cwm--broth hi-cta" [routerLink]="['/view-recipe', recipe._id]">
+        View recipe
+        <span class="visually-hidden">: {{ recipe.name }}</span>
+        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+      </a>
+    </div>
+  </div>
+}
+
+@if (count() > 1) {
+  <div class="hero__controls intro-rise" style="--intro-d: 650ms">
+    <button type="button" class="ctl" (click)="step.emit(-1)" aria-label="Previous recipe">
+      <i class="bi bi-arrow-left" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="ctl" (click)="step.emit(1)" aria-label="Next recipe">
+      <i class="bi bi-arrow-right" aria-hidden="true"></i>
+    </button>
+
+    <ol class="dots" [class.is-running]="running()" [style.--cycle]="cycleMs() + 'ms'" aria-label="Choose a featured recipe">
+      @for (item of items(); track item._id; let i = $index) {
+        <li>
+          <button
+            type="button"
+            class="dot"
+            [attr.aria-current]="i === activeIndex() ? 'true' : null"
+            [attr.aria-label]="'Show recipe ' + (i + 1) + ' of ' + count() + ': ' + item.name"
+            (click)="pick.emit(i)"
+          ><span aria-hidden="true"></span></button>
+        </li>
+      }
+    </ol>
+
+    @if (!reduced()) {
+      <button
+        type="button"
+        class="ctl"
+        (click)="toggle.emit()"
+        [attr.aria-label]="userPaused() ? 'Start automatic rotation' : 'Pause automatic rotation'"
+      >
+        <i class="bi" [class.bi-pause-fill]="!userPaused()" [class.bi-play-fill]="userPaused()" aria-hidden="true"></i>
+      </button>
+    }
+  </div>
+}

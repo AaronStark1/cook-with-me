@@ -1,0 +1,157 @@
+<section
+  class="asm"
+  [class]="'asm asm--' + driver()"
+  [style.--n]="items().length"
+  aria-labelledby="asm-title"
+>
+  <div
+    class="asm__stage"
+    [class.is-compact]="compact()"
+    [class.is-floating]="floating()"
+    [class.is-explore]="explore()"
+    [class.is-idle]="idle()"
+  >
+
+    <!-- first focusable thing in the section: a way past it -->
+    <a class="asm__skip" href="#" (click)="skip($event)">Skip demo</a>
+
+    @for (item of items(); track item.recipe._id; let i = $index) {
+      <div
+        class="asm__scene"
+        [attr.data-scene]="i"
+        [class.is-on]="i === active() || i === leaving() || i === next()"
+        [class.is-top]="i === leaving() || (next() !== null && i === active())"
+        [attr.aria-hidden]="i === active() ? null : 'true'"
+        [attr.inert]="i === active() ? null : ''"
+      >
+        <div class="asm__field" [style.background-color]="item.color" aria-hidden="true"></div>
+
+        <div class="asm__content">
+          <div class="asm__drift">
+
+            <span class="asm__ghost" [style]="item.ghost" aria-hidden="true">{{ item.word }}</span>
+
+            <!-- the turntable: one photo on a plate; the "angles" are a simulated camera, not other photographs -->
+            <app-assembly-plate class="asm__table" aria-hidden="true" [image]="item.recipe.image" [billboards]="item.billboards" />
+
+            <!-- the tickets ARE the ingredient list; their flight is decoration -->
+            <ul class="asm__tickets" aria-label="Ingredients">
+              @for (ticket of item.tickets; track $index; let t = $index) {
+                <li class="ticket" [class.ticket--near]="t % 3 === 0" [class.ticket--more]="ticket.more">
+                  <span class="ticket__in bob" [style.--r]="'0deg'" [style.--bob-dur]="3.2 + ((t * 7) % 10) * 0.18 + 's'" [style.--bob-delay]="-((t * 13) % 40) / 10 + 's'">
+                    @if (ticket.glyph) {
+                      <app-garnish class="ticket__glyph" [name]="ticket.glyph" />
+                    }
+                    <span class="ticket__name">{{ ticket.name }}</span>
+                    @if (ticket.quantity) {
+                      <span class="ticket__qty">{{ ticket.quantity }}</span>
+                    }
+                  </span>
+                </li>
+              }
+            </ul>
+
+            <div class="asm__info">
+              <p class="asm__name display">{{ item.recipe.name }}</p>
+              @if (item.meta.length) {
+                <ul class="asm__meta" aria-label="Recipe details">
+                  @for (m of item.meta; track m) {
+                    <li class="tag">{{ m }}</li>
+                  }
+                </ul>
+              }
+              <div class="asm__links">
+                <a class="btn-cwm" [routerLink]="['/view-recipe', item.recipe._id]" [queryParams]="{ cook: 1 }">
+                  Start cooking <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                </a>
+                <a class="btn-cwm btn-cwm--ghost" [routerLink]="['/view-recipe', item.recipe._id]">
+                  View recipe<span class="visually-hidden">: {{ item.recipe.name }}</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Explore: the plate itself becomes a control -->
+            <button
+              type="button"
+              class="asm__turn"
+              [disabled]="!explore()"
+              aria-label="Turn the plate. Arrow keys rotate and tilt it, Home resets it."
+              (keydown)="onTurnKey($event)"
+            ></button>
+
+          </div>
+        </div>
+      </div>
+    }
+
+    <header class="asm__head">
+      <p class="kicker">The demo</p>
+      <h2 id="asm-title" class="asm__title display">Watch it come together.</h2>
+    </header>
+
+    <div class="asm__chrome">
+      @if (explore()) {
+        <span class="tag tag--yolk asm__hint" aria-hidden="true">Drag to turn the plate</span>
+      }
+
+      @if (driver() === 'static') {
+        <div class="asm__angles" role="group" aria-label="Camera angle">
+          @for (a of angles; track a.label) {
+            <button type="button" class="asm__btn" [attr.aria-pressed]="angle() === a.label" (click)="setAngle(a.x, a.z, a.label)">{{ a.label }}</button>
+          }
+        </div>
+      } @else {
+        <span class="tag tag--yolk asm__angle"><span class="visually-hidden">Camera angle: </span>{{ angle() }}</span>
+      }
+
+      @if (driver() === 'player') {
+        <div class="asm__player">
+          <button type="button" class="asm__btn asm__btn--icon" (click)="toggle()" [attr.aria-label]="playing() ? 'Pause' : 'Play'">
+            <i class="bi" [class.bi-pause-fill]="playing()" [class.bi-play-fill]="!playing()" aria-hidden="true"></i>
+          </button>
+          <div
+            #scrub
+            class="asm__scrub"
+            role="slider"
+            tabindex="0"
+            aria-label="Assembly progress"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-valuenow]="percent()"
+            [attr.aria-valuetext]="phaseText()"
+            (keydown)="onScrubKey($event)"
+            (pointerdown)="onScrubPointer($event, scrub)"
+            (pointermove)="onScrubPointer($event, scrub)"
+          >
+            <span class="asm__scrub-fill" [style.scale]="percent() / 100 + ' 1'"></span>
+          </div>
+          <button type="button" class="asm__btn" (click)="replay()">Replay</button>
+        </div>
+      }
+
+      @if (items().length > 1) {
+        <ol class="asm__steps" aria-label="Choose a recipe">
+          @for (item of items(); track item.recipe._id; let i = $index) {
+            <li>
+              <button
+                type="button"
+                class="asm__btn asm__btn--step numeral"
+                [attr.aria-current]="i === active() ? 'true' : null"
+                [attr.aria-label]="'Show recipe ' + (i + 1) + ' of ' + items().length + ': ' + item.recipe.name"
+                (click)="go(i)"
+              >{{ i < 9 ? '0' : '' }}{{ i + 1 }}</button>
+            </li>
+          }
+        </ol>
+      }
+
+      <p class="asm__count label" aria-hidden="true">
+        <app-odometer class="numeral" [value]="active() + 1" [pad]="2" /> / {{ items().length < 10 ? '0' : '' }}{{ items().length }}
+      </p>
+    </div>
+
+    <p class="visually-hidden" aria-live="polite" aria-atomic="true">{{ announcement() }}</p>
+  </div>
+
+  <span class="asm__end" tabindex="-1"></span>
+</section>

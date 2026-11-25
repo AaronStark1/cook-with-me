@@ -1,65 +1,78 @@
-<h2 class="bg-warning p-3 rounded-3 fw-bold mb-4">
-  Admin Dashboard
-</h2>
+<header class="page-head">
+  <div>
+    <p class="kicker">Admin</p>
+    <h1>Admin Dashboard</h1>
+  </div>
+</header>
 
-<!-- STATS -->
-<div class="row g-4 mb-4">
+<!-- KEY NUMBERS -->
+<section class="stats" appReveal="rise stagger" aria-label="Key numbers" [attr.aria-busy]="loading">
 
-  <div class="col-md-3">
-    <div class="card bg-primary text-white shadow-sm rounded-4">
-      <div class="card-body d-flex justify-content-between">
-        <div>
-          <small>USERS</small>
-          <h3>120</h3>
-        </div>
-        <i class="bi bi-people fs-1 opacity-50"></i>
-      </div>
+  <div class="stat stat--paper">
+    <p class="label">USERS</p>
+    <p class="stat__value" [appStatCount]="users">{{ users ?? '—' }}</p>
+  </div>
+
+  <div class="stat stat--yolk">
+    <p class="label">RECIPES</p>
+    <p class="stat__value" [appStatCount]="recipes" [countDelay]="60">{{ recipes ?? '—' }}</p>
+  </div>
+
+  <div class="stat stat--broth">
+    <p class="label">DOWNLOADS</p>
+    <p class="stat__value" [appStatCount]="downloads" [countDelay]="120">{{ downloads ?? '—' }}</p>
+  </div>
+
+  <a class="stat stat--surface" routerLink="/admin/requestlist">
+    <p class="label">PENDING REQUESTS</p>
+    <p class="stat__value" [appStatCount]="pendingRequests" [countDelay]="180">{{ pendingRequests ?? '—' }}</p>
+    <span class="stat__more label">Review requests →</span>
+  </a>
+
+</section>
+
+<!-- TOP DOWNLOADS -->
+<section class="panel" aria-labelledby="top-downloads-title">
+
+  <div class="panel__head">
+    <h2 id="top-downloads-title" class="display-sm">Most downloaded recipes</h2>
+  </div>
+
+  @if (loading) {
+    <div class="state" role="status">
+      <span class="loader" aria-hidden="true"></span>
+      <p class="state__text">Loading downloads…</p>
     </div>
-  </div>
-
-  <div class="col-md-3">
-    <div class="card bg-success text-white shadow-sm rounded-4">
-      <div class="card-body d-flex justify-content-between">
-        <div>
-          <small>RECIPES</small>
-          <h3>85</h3>
-        </div>
-        <i class="bi bi-egg-fried fs-1 opacity-50"></i>
-      </div>
+  } @else if (!topDownloads.length) {
+    <div class="state">
+      <p class="state__title">No downloads yet</p>
+      <p class="state__text muted">When readers download a recipe it will show up here.</p>
     </div>
-  </div>
-
-  <div class="col-md-3">
-    <div class="card bg-danger text-white shadow-sm rounded-4">
-      <div class="card-body d-flex justify-content-between">
-        <div>
-          <small>DOWNLOADS</small>
-          <h3>430</h3>
-        </div>
-        <i class="bi bi-download fs-1 opacity-50"></i>
-      </div>
+  } @else {
+    <div class="table-responsive" role="region" aria-labelledby="top-downloads-title" tabindex="0">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Recipe</th>
+            <th scope="col">Cuisine</th>
+            <th scope="col" class="text-end">Downloads</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of topDownloads; track item.recipeId; let i = $index) {
+            <tr>
+              <td><span class="numeral rank">{{ i + 1 }}</span></td>
+              <td class="fw-semibold">{{ item.name }}</td>
+              <td>{{ item.cuisine }}</td>
+              <td class="text-end">
+                <span class="tag tag--solid num">{{ item.count }}</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
-  </div>
+  }
 
-  <div class="col-md-3">
-    <div class="card bg-secondary text-white shadow-sm rounded-4">
-      <div class="card-body d-flex justify-content-between">
-        <div>
-          <small>NOTIFICATIONS</small>
-          <h3>12</h3>
-        </div>
-        <i class="bi bi-bell fs-1 opacity-50"></i>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<!-- ANALYTICS -->
-<div class="card shadow-sm rounded-4 p-4">
-  <h5 class="fw-bold mb-3">Analytics</h5>
-  <div class="d-flex justify-content-between text-muted">
-    <span>graph works!</span>
-    <span>calendar works!</span>
-  </div>
-</div>
+</section>

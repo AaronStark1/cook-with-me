@@ -1,59 +1,55 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { FormsModule, NgForm } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { Apiservice } from '../../services/apiservice';
-import { FormsModule } from "@angular/forms";
-import { CommonModule } from '@angular/common';
+import { AuthService } from '../../services/auth';
+import { Stamp } from '../../components/stamp/stamp';
 
 @Component({
   selector: 'app-contact',
-  imports: [FormsModule,CommonModule],
+  imports: [FormsModule, RouterLink, Stamp],
   templateUrl: './contact.html',
   styleUrl: './contact.css',
 })
-export class Contact implements OnInit {
-  constructor(private api: Apiservice) { }
-  ngOnInit(): void {
-
-  }
-  testimonyData: any = {
-    username: '',
-    email: '',
+export class Contact {
+  // Author name/email come from the signed-in account on the server,
+  // so only the message and profession are collected here.
+  testimonyData = {
     message: '',
-    profession: ''
-  }
+    profession: '',
+    agree: false
+  };
 
-addTestimony() {
+  submitted = false;
+  loading = false;
+  successMessage = '';
+  errorMessage = '';
 
-  if (!this.testimonyData.username ||
-      !this.testimonyData.email ||
-      !this.testimonyData.message ||
-      !this.testimonyData.profession) {
+  constructor(private api: Apiservice, protected auth: AuthService) { }
 
-    alert("Please fill all fields");
-    return;
-  }
+  addTestimony(form: NgForm) {
+    this.submitted = true;
+    this.successMessage = '';
+    this.errorMessage = '';
 
-  this.api.addTestimonyAPI(this.testimonyData).subscribe({
-
-    next: (res: any) => {
-      alert("Testimony submitted successfully!");
-
-      console.log(res);
-
-      // Reset form
-      this.testimonyData = {
-        username: '',
-        email: '',
-        message: '',
-        profession: ''
-      };
-    },
-
-    error: (err) => {
-      console.log(err);
-      alert(err?.error?.message || "Something went wrong");
+    if (form.invalid) {
+      return;
     }
 
-  });
-}
+    this.loading = true;
+    const { message, profession } = this.testimonyData;
+    this.api.addTestimonyAPI({ message: message.trim(), profession: profession.trim() }).subscribe({
+      next: () => {
+        this.loading = false;
+        this.successMessage = 'Thank you! Your testimony was submitted and is awaiting approval.';
+        this.submitted = false;
+        form.resetForm({ message: '', profession: '', agree: false });
+      },
+      error: (err) => {
+        this.loading = false;
+        this.errorMessage = err?.error?.message || 'Something went wrong. Please try again.';
+      }
+    });
+  }
 
 }

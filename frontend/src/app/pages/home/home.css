@@ -1,0 +1,177 @@
+:host {
+  display: block;
+}
+
+/* ---- Editorial strip: three oversized words split by yolk squares (drawn by <app-marquee>) ---- */
+.strip {
+  padding-block: clamp(1.25rem, 3vw, 2.25rem);
+  border-top: var(--rule) solid var(--ink);
+}
+
+/* ---- Assembly Demo slot: reserves the demo's exact height before the lazy chunk arrives.
+        The media query is SCROLL_QUERY in motion/assembly-timeline.ts — keep the two identical. ---- */
+.demo-slot {
+  display: block;
+  height: clamp(40rem, calc(100svh - var(--header-h)), 46rem);
+  background: var(--broth);
+}
+
+@media (min-width: 1024px) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .demo-slot {
+    height: calc(var(--n, 1) * 160svh);
+  }
+}
+
+.demo-slot__placeholder {
+  height: 100%;
+}
+
+/* ---- Section head ---- */
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem 2rem;
+  margin-bottom: clamp(1.75rem, 4vw, 3rem);
+}
+
+/* the head's bottom rule is its own element so it can draw across on reveal */
+.section-head__rule {
+  flex: 0 0 100%;
+  height: var(--rule);
+  margin-top: 0.25rem;
+  background: currentColor;
+}
+
+.section-head .lede {
+  margin: 1rem 0 0;
+}
+
+/* ---- Recipe band (cream): tiles inherit broth text, soft-ink metadata, broth offset ---- */
+.recipes {
+  --tile-meta: var(--ink-soft);
+  --tile-shadow: var(--broth);
+}
+
+.recipes__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(15.5rem, 100%), 1fr));
+  gap: clamp(1.5rem, 3vw, 2.5rem) clamp(1rem, 2vw, 1.75rem);
+  margin: 0;
+  padding: 0 0.6rem 0.6rem 0;
+  list-style: none;
+}
+
+/* ---- Testimonials ---- */
+.voices__title {
+  margin-bottom: clamp(1.75rem, 4vw, 3rem);
+}
+
+.voices__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(19rem, 100%), 1fr));
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.quote {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0 0 0 calc(1.25rem + 6px);
+}
+
+/* the yolk rule beside each quote grows down as the quote appears */
+.quote::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: var(--yolk);
+  transform-origin: top;
+}
+
+.voices__grid.rv {
+  --rv-step: 90ms;
+}
+
+.voices__grid.rv .quote::before {
+  scale: 1 0;
+  transition: scale 700ms var(--ease-arrive) calc(var(--i, 0) * 90ms + 120ms);
+}
+
+.voices__grid.rv .quote__mark {
+  scale: 0.6;
+  transform-origin: left top;
+  transition: scale 520ms var(--ease-arrive) calc(var(--i, 0) * 90ms + 160ms);
+}
+
+.voices__grid.rv.is-in .quote::before,
+.voices__grid.rv.is-in .quote__mark {
+  scale: 1;
+}
+
+.quote__mark {
+  display: block;
+  height: 0.55em;
+  margin-bottom: 0.9rem;
+  font-size: clamp(4rem, 7vw, 6rem);
+  line-height: 0.85;
+  color: var(--ink);
+}
+
+.quote__text {
+  margin: 0 0 1.25rem;
+}
+
+.quote__text p {
+  margin: 0;
+  font-size: clamp(1.15rem, 1.6vw, 1.4rem);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.quote__by {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-top: auto;
+}
+
+.quote__name {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  text-transform: uppercase;
+}
+
+.quote__job {
+  color: var(--muted);
+}
+
+.voices__empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem 2rem;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  border: var(--rule) solid var(--ink);
+}
+
+.voices__empty .lede {
+  margin: 0;
+}
+
+/* ---- CTA ---- */
+.cta__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem 3rem;
+}
+
+.cta__lede {
+  margin: 1rem 0 0;
+}

@@ -1,71 +1,41 @@
 const savedRecipes = require('../models/savedRecipeModel')
+const recipes = require('../models/recipeModel')
 
 exports.addSavedRecipe = async (req, res) => {
-  try {
+    const { id } = req.params
+    const userId = String(req.userId)
 
-    const { id } = req.params;
-    const userId = req.userId;
-    const { name, image } = req.body;
-
-    const existingRecipe = await savedRecipes.findOne({
-      recipeId: id,
-      userId: userId
-    });
-
-    if (existingRecipe) {
-      return res.status(401).json({ message: "Already saved" });
+    // Name and image come from the catalogue, not from the client.
+    const recipe = await recipes.findById(id)
+    if (!recipe) {
+        return res.status(404).json({ message: 'Recipe not found' })
     }
 
-    const newRecipe = new savedRecipes({
-      recipeId: id,
-      name,
-      image,
-      userId
-    });
+    const existingRecipe = await savedRecipes.findOne({ recipeId: id, userId })
+    if (existingRecipe) {
+        return res.status(409).json({ message: 'Already saved' })
+    }
 
-    await newRecipe.save();
+    const newRecipe = await savedRecipes.create({
+        recipeId: id,
+        name: recipe.name,
+        image: recipe.image,
+        userId
+    })
 
-    res.status(200).json({
-      message: "Added to collection",
-      newRecipe
-    });
-
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
+    res.status(201).json({ message: 'Added to collection', newRecipe })
+}
 
 exports.getSavedRecipe = async (req, res) => {
+    const saved = await savedRecipes.find({ userId: String(req.userId) })
+    res.status(200).json(saved)
+}
 
-  try {
-
-    const userId = String(req.userId);
-
-    const getSavedRecipes = await savedRecipes.find({
-      userId: userId
-    });
-
-    console.log("Querying for:", userId);
-    console.log("Saved recipes found:", getSavedRecipes);
-
-    res.status(200).json(getSavedRecipes);
-
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: err.message });
-  }
-
-};
-
-
-exports.deleteSavedRecipe=async(req,res)=>{
-    try {
-        const {id}=req.params
-        const newSavedRecipe=await savedRecipes.findByIdAndDelete({id})
-        res.status(200).json("Recipe deleted successfully")
-    } catch (error) {
-        res.status(500).json(error)
+exports.deleteSavedRecipe = async (req, res) => {
+    // Scoped to the caller so nobody can delete another user's records.
+    const deleted = await savedRecipes.findOneAndDelete({ _id: req.params.id, userId: String(req.userId) })
+    if (!deleted) {
+        return res.status(404).json({ message: 'Not found' })
     }
+    res.status(200).json({ message: 'Recipe deleted successfully' })
 }

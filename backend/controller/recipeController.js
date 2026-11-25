@@ -1,124 +1,73 @@
-const recipes=require('../models/recipeModel')
+const mongoose = require('mongoose')
+const recipes = require('../models/recipeModel')
 
-exports.getRecipes=async(req,res)=>{
-    try{
-        const response=await recipes.find()
-        res.status(200).json({messge:"all recipes fetched",response})
-    }
-    catch(err){
-        res.status(500).json(err)
-    }
-}
-exports.viewRecipe=async(req,res)=>{
-    try {
-        const {id}=req.params
-const viewRes = await recipes.findById(id)
-        res.status(200).json(viewRes)
-    } catch (err) {
-        res.status(500).json("Err"+err)
+const pickRecipeFields = (body) => {
+    const {
+        name, ingredients, instructions, prepTimeMinutes, cookTimeMinutes, servings,
+        difficulty, cuisine, caloriesPerServing, image, mealType
+    } = body
+    return {
+        name, ingredients, instructions, prepTimeMinutes, cookTimeMinutes, servings,
+        difficulty, cuisine, caloriesPerServing, image, mealType
     }
 }
 
-exports.getRelatedRecipe=async(req,res)=>{
-    try {
-        const cuisine = req.query.cuisine
-        const viewRes=await recipes.find({cuisine})
-        res.status(200).json(viewRes)
-    } catch (err) {
-        res.status(500).json("Err"+err)
-    }
+exports.getRecipes = async (req, res) => {
+    const response = await recipes.find()
+    res.status(200).json({ message: 'all recipes fetched', response })
 }
 
-exports.addRecipe=async (req,res) => {
-    const {name,ingredients,instructions,prepTimeMinutes,cookTimeMinutes,servings,difficulty,cuisine,caloriesPerServing,image,mealType} = req.body
-    try {
-        const existingRecipe=await recipes.findOne({name})
-        if (existingRecipe) {
-            res.status(400).json({messge:"already exist"})
-        } else {
-            const newRecipe=new recipes({name,ingredients,instructions,prepTimeMinutes,cookTimeMinutes,servings,difficulty,cuisine,caloriesPerServing,image,mealType})
-            await newRecipe.save()
-            res.status(200).json({messge:"Recipe added",newRecipe})
-        }
-    } catch (error) {
-        res.status(500).json(error)
+exports.viewRecipe = async (req, res) => {
+    const recipe = await recipes.findById(req.params.id)
+    if (!recipe) {
+        return res.status(404).json({ message: 'Recipe not found' })
     }
+    res.status(200).json(recipe)
 }
-exports.updateRecipe = async (req, res) => {
 
-  const { id } = req.params;
+exports.getRelatedRecipe = async (req, res) => {
+    const related = await recipes.find({ cuisine: req.query.cuisine })
+    res.status(200).json(related)
+}
 
-  const {
-    name,
-    ingredients,
-    instructions,
-    prepTimeMinutes,
-    cookTimeMinutes,
-    servings,
-    difficulty,
-    cuisine,
-    caloriesPerServing,
-    image,
-    mealType
-  } = req.body;
+exports.addRecipe = async (req, res) => {
+    const fields = pickRecipeFields(req.body)
 
-  try {
-
-    // Optional: Prevent duplicate name (excluding current recipe)
-    const existingRecipe = await recipes.findOne({
-      name,
-      _id: { $ne: id }
-    });
-
+    const existingRecipe = await recipes.findOne({ name: fields.name })
     if (existingRecipe) {
-      return res.status(400).json({
-        message: "Recipe name already exists"
-      });
+        return res.status(409).json({ message: 'Recipe already exists' })
     }
 
-    const updatedRecipe = await recipes.findByIdAndUpdate(
-      id,
-      {
-        name,
-        ingredients,
-        instructions,
-        prepTimeMinutes,
-        cookTimeMinutes,
-        servings,
-        difficulty,
-        cuisine,
-        caloriesPerServing,
-        image,
-        mealType
-      },
-      { new: true } // return updated document
-    );
+    const newRecipe = await recipes.create(fields)
+    res.status(201).json({ message: 'Recipe added', newRecipe })
+}
 
+exports.updateRecipe = async (req, res) => {
+    const { id } = req.params
+    const fields = pickRecipeFields(req.body)
+
+    // Prevent a duplicate name (excluding the recipe being edited).
+    // sanitizeFilter is on, so server-built operators must be marked as trusted.
+    const existingRecipe = await recipes.findOne({
+        name: fields.name,
+        _id: mongoose.trusted({ $ne: id })
+    })
+    if (existingRecipe) {
+        return res.status(409).json({ message: 'Recipe name already exists' })
+    }
+
+    const updatedRecipe = await recipes.findByIdAndUpdate(id, fields, { returnDocument: 'after', runValidators: true })
     if (!updatedRecipe) {
-      return res.status(404).json({
-        message: "Recipe not found"
-      });
+        return res.status(404).json({ message: 'Recipe not found' })
     }
 
-    res.status(200).json({
-      message: "Recipe updated successfully",
-      updatedRecipe
-    });
+    res.status(200).json({ message: 'Recipe updated successfully', updatedRecipe })
+}
 
-  } catch (error) {
-    res.status(500).json({
-      message: "Error updating recipe",
-      error
-    });
-  }
-};
-
-exports.deleteRecipe=async (req,res) => {
-    const {id}=req.params
-    try {
-        await recipes.findByIdAndDelete({_id:id})
-        res.status(200).json({message:"Deleted recipe"})
-    } catch (error) {
-        res.status(500).json(error)
+exports.deleteRecipe = async (req, res) => {
+    const deleted = await recipes.findByIdAndDelete(req.params.id)
+    if (!deleted) {
+        return res.status(404).json({ message: 'Recipe not found' })
     }
+    res.status(200).json({ message: 'Deleted recipe' })
 }

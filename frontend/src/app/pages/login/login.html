@@ -1,37 +1,97 @@
-<div class="auth-wrapper">
+<section class="auth band band--paper" aria-labelledby="login-title">
 
-  <div class="auth-card">
+  <div class="auth__platter" appPlatterDrift aria-hidden="true"></div>
 
-    <h2 class="mb-4">Login here...</h2>
+  <div class="wrap auth__grid">
 
-    <form [formGroup]="loginForm" (ngSubmit)="login()">
+    <div class="auth__intro">
+      <p class="kicker">Welcome back</p>
+      <h1 id="login-title" class="auth__title">Log in.</h1>
+      <p class="lede auth__lede">
+        Pick up where you left off — your saved recipes and downloads are waiting.
+      </p>
+    </div>
 
-      <input
-        type="email"
-        class="form-control mb-3"
-        placeholder="Email"
-        formControlName="email"
-      />
+    <div class="auth__panel">
 
-      <input
-        type="password"
-        class="form-control mb-3"
-        placeholder="Password"
-        formControlName="password"
-      />
+      <h2 class="auth__panel-title display-sm">Sign in</h2>
 
-      <button type="submit" class="btn btn-success px-4">
-        Sign In
-      </button>
+      @if (justRegistered) {
+        <div class="alert alert-success" role="status">
+          Registration successful — please sign in.
+        </div>
+      }
 
-    </form>
+      @if (errorMessage) {
+        <div class="alert alert-danger" role="alert">{{ errorMessage }}</div>
+      }
 
-    <p class="mt-3 small">
-      New here?
-      <a routerLink="/register" class="fw-semibold">
-        Register Now
-      </a>
-    </p>
+      <form [formGroup]="loginForm" (ngSubmit)="login()" appShakeInvalid novalidate>
+
+        <div class="auth__field">
+          <label for="email" class="form-label">Email</label>
+          <input
+            id="email"
+            type="email"
+            class="form-control"
+            [class.is-invalid]="submitted && f['email'].invalid"
+            placeholder="you@example.com"
+            autocomplete="username"
+            formControlName="email"
+          />
+          <div class="invalid-feedback">
+            <span>
+              @if (f['email'].errors?.['required']) {
+                Email is required.
+              } @else {
+                Enter a valid email address.
+              }
+            </span>
+          </div>
+        </div>
+
+        <div class="auth__field">
+          <label for="password" class="form-label">Password</label>
+          <div class="auth__pw">
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              class="form-control"
+              [class.is-invalid]="submitted && f['password'].invalid"
+              placeholder="Password"
+              autocomplete="current-password"
+              formControlName="password"
+            />
+            <button
+              type="button"
+              class="auth__eye"
+              [attr.aria-pressed]="showPassword"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+              (click)="showPassword = !showPassword"
+            >
+              <i class="bi" [class.bi-eye]="!showPassword" [class.bi-eye-slash]="showPassword" aria-hidden="true"></i>
+            </button>
+            <div class="invalid-feedback"><span>Password is required.</span></div>
+          </div>
+        </div>
+
+        <!-- both labels share one grid cell (stable width); only the visible one is read out -->
+        <button type="submit" class="btn-cwm btn-cwm--broth auth__submit" [disabled]="loading">
+          <span class="auth__go" [class.is-on]="!loading">Sign In</span>
+          <span class="auth__go" [class.is-on]="loading">
+            <span class="loader" [class.loader--still]="!loading" aria-hidden="true"></span>
+            Signing in…
+          </span>
+        </button>
+
+      </form>
+
+      <p class="auth__switch">
+        New here?
+        <a routerLink="/register">Register Now</a>
+      </p>
+
+    </div>
 
   </div>
-</div>
+</section>

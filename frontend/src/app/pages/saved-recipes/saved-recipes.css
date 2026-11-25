@@ -1,0 +1,142 @@
+:host {
+  display: block;
+}
+
+.saved {
+  min-height: calc(100svh - var(--header-h));
+  padding-block: clamp(2.5rem, 6vw, 5rem) clamp(3rem, 7vw, 6rem);
+}
+
+.saved__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  margin-bottom: clamp(2rem, 5vw, 3.5rem);
+  padding-bottom: 1.25rem;
+  border-bottom: var(--rule) solid var(--ink);
+}
+
+.saved__title {
+  font-size: clamp(2.1rem, 7vw, 5.5rem);
+  line-height: 0.92;
+  overflow-wrap: break-word;
+}
+
+.saved__count {
+  gap: 0.4em;
+  margin: 0;
+}
+
+.saved__empty {
+  border: var(--rule) solid var(--ink);
+}
+
+/* An empty plate, drawn like the plate loader; `.plate-rock` (motion.css) rocks it once. */
+.saved__plate {
+  position: relative;
+  display: inline-block;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: 1.25rem;
+  background: var(--ink);
+  border: 2px solid var(--broth);
+  border-radius: 50%;
+}
+
+.saved__plate::before,
+.saved__plate::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 3px dashed var(--broth);
+  border-radius: 50%;
+}
+
+.saved__plate::after {
+  inset: 32%;
+  background: var(--yolk);
+  border: 2px solid var(--broth);
+}
+
+/* ---- Tile grid: room around each tile for the hard yolk offset ---- */
+.saved__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr));
+  gap: 2.75rem 2.25rem;
+  margin: 0;
+  padding: 0 12px 12px 0;
+  list-style: none;
+  position: relative; /* appFlip pins a removed tile here while it wipes out */
+}
+
+.tile {
+  position: relative; /* anchors the full-card link and the remove button */
+}
+
+.tile__photo {
+  margin-bottom: 1rem;
+}
+
+.tile__n {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 0.35rem 0.6rem 0.2rem;
+  background: var(--broth);
+  color: var(--ink);
+  font-size: 1.6rem;
+  pointer-events: none;
+}
+
+.tile__remove {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  font-size: 1.1rem;
+  color: var(--ink);
+  background: var(--broth);
+  border: 0;
+  cursor: pointer;
+  transition: background-color 0.12s var(--ease), color 0.12s var(--ease);
+}
+
+.tile__remove:hover {
+  background: var(--yolk);
+  color: var(--broth);
+}
+
+.tile__name {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+
+.tile__link {
+  text-decoration: none;
+}
+
+/* the whole tile is the click target for the recipe page */
+.tile__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.tile:hover .tile__link {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 0.2em;
+}
+
+.tile__link:focus-visible {
+  outline-offset: 6px;
+}

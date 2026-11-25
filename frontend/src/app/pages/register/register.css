@@ -1,16 +1,43 @@
-.auth-wrapper {
-  min-height: 100vh;
-  background: url('https://wallpapers.com/images/hd/food-4k-1pf6px6ryqfjtnyr.jpg') center/cover no-repeat;
-  display: flex;
-  align-items: center;
-  padding-left: 8%;
+/* Shared poster layout: ../auth/auth.css. Only the numbered perk list is register-specific. */
+.perks {
+  display: grid;
+  gap: 0;
+  margin: clamp(1.75rem, 4vw, 2.75rem) 0 0;
+  padding: 0;
+  max-width: 30rem;
+  list-style: none;
+  border-top: var(--rule) solid var(--ink);
 }
 
-.auth-card {
-  width: 420px;
-  background: rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(8px);
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+.perks li {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-height: 4rem;
+  padding-block: 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 40%, transparent);
+  font-weight: 700;
+}
+
+.perks__n {
+  flex: none;
+  min-width: 3.5rem;
+  font-size: clamp(2rem, 4.5vw, 3rem);
+}
+
+/* Decorative strength meter: four hard squares that fill as the password grows. */
+.meter {
+  display: flex;
+  gap: 4px;
+  margin-top: 0.5rem;
+}
+
+.meter i {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--broth);
+}
+
+.meter .is-on {
+  background: var(--broth);
 }

@@ -1,7 +1,159 @@
-footer a:hover {
+.site-footer {
+  background: var(--broth);
+  color: var(--ink);
+  border-top: var(--rule) solid var(--yolk);
+}
+
+.site-footer__top {
+  padding-block: clamp(2.5rem, 6vw, 5rem) clamp(2rem, 4vw, 3rem);
+  container-type: inline-size;
+}
+
+/* oversized wordmark — the editorial sign-off.
+   Sized against the footer's content width (cqi), not the viewport: in Dela Gothic One
+   "COOK" + the "WITH ME" block measure ~9.9em, so 9.6cqi always fits with a little slack.
+   (The old 8.6vw / 9rem sizing overran the 1440px wrap and got clipped by overflow:hidden.) */
+.site-footer__mark {
+  margin: 0 0 clamp(2rem, 5vw, 4rem);
+  font-family: var(--font-display);
+  font-size: min(9.6cqi, 9rem);
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.site-footer__mark b {
+  display: inline-block;
+  font-weight: inherit;
+}
+
+/* scroll-in: each letter rises from behind the baseline 40 ms apart, then the yolk block wipes in from the left */
+.site-footer__mark.rv b {
+  translate: 0 105%;
+  transition: translate 620ms var(--ease-arrive) calc(var(--i, 0) * 40ms);
+}
+
+.site-footer__mark.rv span {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 500ms var(--ease-wipe) 300ms;
+}
+
+.site-footer__mark.rv.is-in b {
+  translate: 0 0;
+}
+
+.site-footer__mark.rv.is-in span {
+  clip-path: inset(0 0 0 0);
+}
+
+.site-footer__mark span {
+  display: inline-block;
+  margin-left: 0.05em;
+  padding: 0.04em 0.14em 0.02em;
+  background: var(--yolk);
+  color: var(--broth);
+}
+
+.site-footer__cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 2rem 3rem;
+  padding-top: 1.75rem;
+  border-top: var(--rule) solid var(--ink);
+}
+
+.site-footer__head {
+  margin: 0 0 0.9rem;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+}
+
+.site-footer ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.site-footer li a {
+  display: inline-block;
+  padding-block: 0.4rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* (the hover underline is drawn from the left by the global link rule in motion.css) */
+
+.site-footer__note {
+  max-width: 30ch;
+  margin: 0 0 1rem;
+  line-height: 1.6;
+}
+
+.site-footer__note-cta {
+  font-weight: 700;
+  text-decoration: none;
+}
+
+
+
+.site-footer__base {
+  border-top: 1px solid color-mix(in srgb, var(--ink) 35%, transparent);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.site-footer__base-inner {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  padding-block: 1.1rem;
+}
+
+.site-footer__base-inner a {
+  text-decoration: none;
+}
+
+.site-footer__base-inner a:hover {
   text-decoration: underline;
 }
 
-footer i {
+/* "Back to top": a square button; the arrow nudges up */
+.site-footer__up {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  color: var(--broth);
+  background: var(--yolk);
+  border: 2px solid var(--yolk);
   cursor: pointer;
+}
+
+.site-footer__up i {
+  transition: translate var(--dur-ui) var(--ease);
+}
+
+.site-footer__up:hover,
+.site-footer__up:focus-visible {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.site-footer__up:hover i,
+.site-footer__up:focus-visible i {
+  translate: 0 -4px;
+}
+
+.site-footer__base-inner {
+  align-items: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-footer__up i {
+    transition: none;
+    translate: none !important;
+  }
 }

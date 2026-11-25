@@ -1,28 +1,33 @@
 import { Component, OnInit } from '@angular/core';
 import { Apiservice } from '../../services/apiservice';
-import { CommonModule } from '@angular/common';
+import { RowsIn } from '../row-motion';
 
 @Component({
   selector: 'app-users-list',
-  imports: [CommonModule],
+  imports: [RowsIn],
   templateUrl: './users-list.html',
   styleUrl: './users-list.css',
 })
-export class UsersList implements OnInit{
-  users: any= [];
-  constructor(private api:Apiservice){}
+export class UsersList implements OnInit {
+  users: any[] = [];
+  loading = true;
+  errorMessage = '';
+
+  constructor(private api: Apiservice) {}
+
   ngOnInit(): void {
     this.getAllUsers()
   }
-  getAllUsers(){
+
+  getAllUsers() {
     this.api.getAllUsersAPI().subscribe({
-      next:(res:any)=>{
-        console.log(res);
-        this.users = res; 
+      next: (res: any) => {
+        this.users = res;
+        this.loading = false;
       },
-      error:(err)=>{
-        console.log(err);
-        
+      error: () => {
+        this.loading = false;
+        this.errorMessage = 'Could not load users. Please try again.';
       }
     })
   }

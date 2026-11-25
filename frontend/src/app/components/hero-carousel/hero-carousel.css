@@ -1,0 +1,185 @@
+/* ==========================================================================
+   Poster hero + lazy-Susan carousel
+
+   Geometry (all in container-query units of the hero's width, so the whole
+   composition scales as one poster):
+     --D   diameter of the active dish
+     --R   radius of the ring the dishes ride on
+     --ax/--ay  where the ACTIVE dish's centre sits, from the carousel's top-left
+   The wheel's centre is therefore (ax, ay + R) — below the active dish — and the
+   remaining dishes sit on the same circle, mostly clipped by the hero edge so
+   they only "peek in".
+
+   The depth stack (platter, ghost word, dishes, garnish, props) is drawn by
+   <app-hero-stage>; the yolk info block and the controls by <app-hero-info>.
+   Both read the custom properties defined here.
+   ========================================================================== */
+
+:host {
+  display: block;
+}
+
+.hero {
+  /* one gesture: the wheel turns on the wipe's clock. Its curve is the wipe's cubic form —
+     the measured linear() curve covers 58 % of the travel in 70 ms, which reads as a hard
+     edge on a colour panel but as a jump cut on a heavy plate */
+  --dur: var(--dur-wipe-hero);
+  --wheel-ease: cubic-bezier(0.65, 0.02, 0.2, 1);
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  container-type: inline-size;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.hero > * {
+  grid-area: 1 / 1;
+}
+
+/* ---- Colour field: the active colour underneath, the previous one sliding off above it ---- */
+.hero__field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.hero__field-layer,
+.hero__sweep {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+}
+
+.hero__field-layer.is-on,
+.hero__sweep.is-on {
+  visibility: visible;
+}
+
+/* the wipe: the old colour as one panel, with a hard 6px yolk stripe as its leading edge */
+.hero__sweep {
+  z-index: 1;
+}
+
+.hero__sweep::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  width: 6px;
+  background: var(--yolk);
+}
+
+.hero__sweep.is-back::after {
+  left: auto;
+  right: 100%;
+}
+
+/* ---- Poster type ---- */
+/* above the stage's travelling layers (ghost word, garnish, props), so nothing ever
+   passes in front of live text; below the info block and controls */
+.hero__type {
+  position: relative;
+  z-index: 27;
+  align-self: start;
+  max-width: 66cqw;
+  /* bottom padding reserves the strip the yolk info block occupies */
+  padding: clamp(1.75rem, 3.4cqw, 3.25rem) var(--gutter) 20rem;
+  pointer-events: none;
+}
+
+.hero__type a {
+  pointer-events: auto;
+}
+
+.hero__title {
+  margin: 0.4rem 0 1.4rem;
+  font-size: clamp(2.6rem, 7.6cqw, 8rem);
+  line-height: 0.9;
+}
+
+.hero__line {
+  display: block;
+  white-space: nowrap;
+}
+
+.hero__line > span {
+  display: inline-block;
+}
+
+.hero__line > span + span {
+  margin-left: 0.28em;
+}
+
+.hero__lede {
+  margin-bottom: 1.5rem;
+  max-width: 27rem;
+}
+
+.hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* ---- Carousel layer overlays the whole poster; only the platter and its controls take pointer events ---- */
+.hero__carousel {
+  --D: 30cqw;
+  --R: 31cqw;
+  --ax: 76cqw;
+  --ay: 27cqw;
+  --rim: calc(var(--R) + var(--D) * 0.6);
+
+  position: relative;
+  min-height: max(36rem, 50cqw);
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Small screens: recompose, don't just shrink.
+   Headline stacks in four lines, the platter becomes a stage below it, and the
+   info block + controls flow underneath so nothing covers the copy.
+   ========================================================================== */
+@container (max-width: 820px) {
+  .hero > * {
+    grid-area: auto;
+  }
+
+  .hero__type {
+    max-width: none;
+    padding-top: 1.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .hero__title {
+    font-size: clamp(3rem, 19cqw, 6rem);
+  }
+
+  .hero__line > span {
+    display: block;
+  }
+
+  .hero__line > span + span {
+    margin-left: 0;
+  }
+
+  .hero__lede {
+    max-width: none;
+  }
+
+  .hero__carousel {
+    --D: 66cqw;
+    --R: 62cqw;
+    --ax: 50cqw;
+    --ay: 40cqw;
+    --rim: calc(var(--R) + var(--D) * 0.42);
+
+    min-height: 0;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+  }
+}

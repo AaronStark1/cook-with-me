@@ -1,161 +1,223 @@
-<div class="container my-5" *ngIf="recipe">
+@if (state === 'loading') {
 
-  <!-- BACK BUTTON -->
-  <button
-    routerLink="/all-recipes"
-    class="btn btn-outline-warning rounded-pill mb-4"
-  >
-    ← Back to Recipes
-  </button>
-
-  <div class="row g-5">
-
-    <!-- LEFT IMAGE -->
-    <div class="col-md-6">
-      <img
-        [src]="recipe.image"
-        class="img-fluid rounded-4 shadow"
-      />
-    </div>
-
-    <!-- RIGHT DETAILS -->
-    <div class="col-md-6">
-
-      <h2 class="fw-bold mb-4">
-        {{ recipe.title }}
-      </h2>
-
-      <!-- INFO ROW -->
-      <div class="d-flex gap-5 mb-4 flex-wrap">
-
+  <section class="band band--paper feature" aria-label="Loading recipe">
+    <div class="wrap" role="status">
+      <p class="visually-hidden">Loading recipe…</p>
+      <!-- skeleton of the recipe head: title, facts, photo -->
+      <div class="feature__grid feature__grid--skeleton" aria-hidden="true">
         <div>
-          <i class="bi bi-basket2-fill fs-4 text-warning"></i>
-          <p class="mb-0 fw-semibold">Cuisine</p>
-          <small>{{ recipe.cuisine }}</small>
+          <span class="skeleton skeleton--short"></span>
+          <span class="skeleton skeleton--title"></span>
+          <span class="skeleton skeleton--facts"></span>
+          <span class="skeleton skeleton--line"></span>
         </div>
-
-        <div>
-          <i class="bi bi-people-fill fs-4 text-warning"></i>
-          <p class="mb-0 fw-semibold">Servings</p>
-          <small>{{ recipe.servings }}</small>
-        </div>
-
-        <div>
-          <i class="bi bi-fire fs-4 text-warning"></i>
-          <p class="mb-0 fw-semibold">Calories</p>
-          <small>{{ recipe.calories }} kcal</small>
-        </div>
-
+        <span class="skeleton skeleton--photo"></span>
       </div>
+    </div>
+  </section>
 
-      <!-- TIMING CARDS -->
-      <div class="row text-center mb-4">
+} @else if (state === 'error') {
 
-        <div class="col-4">
-          <div class="card p-3 shadow-sm rounded-4 border-0">
-            <p class="fw-semibold mb-1">Prep</p>
-            <small>{{ recipe.prepTime }} mins</small>
+  <section class="band band--paper article-state" aria-labelledby="recipe-error-title">
+    <div class="state state--plate" role="alert">
+      <span class="loader loader--still" aria-hidden="true"></span>
+      <h1 id="recipe-error-title" class="state__title">Recipe not found</h1>
+      <p class="state__text">{{ errorMessage }}</p>
+      <a routerLink="/all-recipes" class="btn-cwm">Browse all recipes</a>
+    </div>
+  </section>
+
+} @else if (recipe) {
+
+  <!-- FEATURE HEAD -->
+  <section class="band band--paper feature" aria-labelledby="recipe-title">
+    <div class="wrap">
+
+      <a routerLink="/all-recipes" [info]="back" class="feature__back label">
+        <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to recipes
+      </a>
+
+      <div class="feature__grid">
+
+        <div class="feature__text">
+
+          <p class="kicker">
+            {{ recipe.cuisine }}@if (recipe.mealType?.length) { · {{ recipe.mealType?.join(' / ') }} }
+          </p>
+
+          <h1 id="recipe-title" class="feature__title" appReveal="mask">{{ recipe.name }}</h1>
+
+          <!-- key facts: oversized numerals, only fields the record actually has -->
+          <dl class="facts">
+            @if (recipe.prepTimeMinutes != null) {
+              <div class="fact">
+                <dt class="label">Prep</dt>
+                <dd><span class="numeral" appCountUp>{{ recipe.prepTimeMinutes }}</span><span class="fact__unit label">min</span></dd>
+              </div>
+            }
+            @if (recipe.cookTimeMinutes != null) {
+              <div class="fact">
+                <dt class="label">Cook</dt>
+                <dd><span class="numeral" appCountUp [countDelay]="80">{{ recipe.cookTimeMinutes }}</span><span class="fact__unit label">min</span></dd>
+              </div>
+            }
+            @if (recipe.servings != null) {
+              <div class="fact">
+                <dt class="label">Serves</dt>
+                <dd><span class="numeral" appCountUp [countDelay]="160">{{ recipe.servings }}</span></dd>
+              </div>
+            }
+            @if (recipe.caloriesPerServing != null) {
+              <div class="fact">
+                <dt class="label">Calories</dt>
+                <dd><span class="numeral" appCountUp [countDelay]="240">{{ recipe.caloriesPerServing }}</span><span class="fact__unit label">kcal</span></dd>
+              </div>
+            }
+            @if (recipe.difficulty) {
+              <div class="fact fact--word">
+                <dt class="label">Difficulty</dt>
+                <dd><span class="fact__word display">{{ recipe.difficulty }}</span></dd>
+              </div>
+            }
+          </dl>
+
+          <!-- ACTIONS -->
+          <div class="feature__actions">
+            @if (recipe.instructions?.length) {
+              <button type="button" class="btn-cwm feature__cook" (click)="startCooking()">
+                <i class="bi bi-fire" aria-hidden="true"></i>
+                Start cooking
+              </button>
+            }
+
+            <button
+              type="button"
+              (click)="downloadRecipe()"
+              [disabled]="downloading"
+              class="btn-cwm btn-cwm--ink feature__download"
+              [class.is-busy]="downloading"
+            >
+              <i class="bi" [class.bi-download]="!pdfReady" [class.bi-check-lg]="pdfReady" aria-hidden="true"></i>
+              {{ downloading ? 'Preparing…' : pdfReady ? 'PDF ready' : 'Download PDF' }}
+            </button>
+
+            <button
+              type="button"
+              (click)="saveRecipe()"
+              [disabled]="saving"
+              class="btn-cwm btn-cwm--ink feature__save"
+            >
+              <i class="bi" [class.bi-bookmark-heart]="!saved" [class.bi-bookmark-check-fill]="saved" aria-hidden="true"></i>
+              {{ saving ? 'Saving…' : saved ? 'Saved' : 'Save' }}
+              @if (saved) {
+                <app-stamp text="Saved" />
+              }
+            </button>
+
+            <button type="button" class="btn-cwm btn-cwm--ghost" (click)="share()">
+              <i class="bi" [class.bi-share]="canShare" [class.bi-link-45deg]="!canShare" aria-hidden="true"></i>
+              {{ canShare ? 'Share' : 'Copy link' }}
+            </button>
+          </div>
+
+          @if (!auth.isLoggedIn()) {
+            <p class="feature__hint label">
+              <a routerLink="/login" [queryParams]="{ returnUrl: '/view-recipe/' + recipeId }">Log in</a>
+              or
+              <a routerLink="/register">join</a>
+              to save and download recipes.
+            </p>
+          }
+
+          @if (notice) {
+            <div [class]="'alert alert-' + notice.type" [attr.role]="notice.type === 'danger' ? 'alert' : 'status'">
+              {{ notice.text }}
+            </div>
+          }
+
+        </div>
+
+        <div class="feature__photo">
+          <div class="photo photo--offset" [style.view-transition-name]="morphName">
+            <img
+              appImgFallback
+              [src]="recipe.image || plate"
+              [alt]="recipe.name ?? 'Recipe photo'"
+              fetchpriority="high"
+              decoding="async"
+            />
           </div>
         </div>
 
-        <div class="col-4">
-          <div class="card p-3 shadow-sm rounded-4 border-0">
-            <p class="fw-semibold mb-1">Cook</p>
-            <small>{{ recipe.cookTime }} mins</small>
-          </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INGREDIENTS + METHOD -->
+  <section class="band band--cream method" aria-label="Ingredients and method">
+    <div class="wrap method__grid">
+
+      <aside class="ingredients" aria-labelledby="ingredients-title">
+        <div class="ingredients__head">
+          <h2 id="ingredients-title" class="display-md">Ingredients</h2>
+          @if (progress.checks(recipeId).ingredients.length) {
+            <button type="button" class="ingredients__reset label" (click)="progress.reset(recipeId, 'ingredients')">Reset</button>
+          }
         </div>
+        <ul>
+          @for (item of recipe.ingredients ?? []; track $index) {
+            <li>
+              <!-- tick it off as you gather it; remembered on this device -->
+              <button
+                type="button"
+                class="check"
+                [attr.aria-pressed]="progress.isChecked(recipeId, 'ingredients', $index)"
+                (click)="progress.toggle(recipeId, 'ingredients', $index)"
+              >
+                <span class="check__box" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4.5 10.5l3.6 3.6 7.4-8" /></svg></span>
+                <span class="check__text">{{ item }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      </aside>
 
-        <div class="col-4">
-          <div class="card p-3 shadow-sm rounded-4 border-0">
-            <p class="fw-semibold mb-1">Mode</p>
-            <small>{{ recipe.mode }}</small>
-          </div>
-        </div>
-
+      <div class="steps" aria-labelledby="steps-title">
+        <h2 id="steps-title" class="display-md">Method</h2>
+        <ol [style.--rail]="rail">
+          @for (step of recipe.instructions ?? []; track $index) {
+            @let done = progress.isChecked(recipeId, 'steps', $index);
+            <li [class.is-current]="$index === currentStep" [class.is-done]="done">
+              <button
+                type="button"
+                class="steps__n numeral"
+                [attr.aria-pressed]="done"
+                [attr.aria-label]="'Step ' + ($index + 1) + (done ? ', done. Mark as not done' : '. Mark as done')"
+                (click)="progress.toggle(recipeId, 'steps', $index)"
+              >{{ $index + 1 < 10 ? '0' : '' }}{{ $index + 1 }}</button>
+              <p>{{ step }}</p>
+            </li>
+          }
+        </ol>
       </div>
-
-      <!-- ACTION BUTTONS -->
-      <div class="d-flex gap-3 mb-3">
-        <button (click)="addRecipeDownload()" class="btn btn-success rounded-pill px-4">
-          ⬇ Download
-        </button>
-
-        <button class="btn btn-primary rounded-pill px-4">
-          ❤️ Save
-        </button>
-      </div>
-
-      <!-- TAGS -->
-      <div class="d-flex gap-2 mb-4 flex-wrap">
-        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
-          {{ recipe.category }}
-        </span>
-
-        <span class="badge bg-light text-dark px-3 py-2 rounded-pill shadow-sm">
-          {{ recipe.difficulty }}
-        </span>
-
-        <span class="badge bg-light text-dark px-3 py-2 rounded-pill shadow-sm">
-          Popular
-        </span>
-      </div>
-
-      <!-- INGREDIENTS -->
-      <h5 class="fw-bold mt-4">🥣 Ingredients</h5>
-      <ul class="list-group list-group-flush mb-4">
-        <li
-          class="list-group-item"
-          *ngFor="let item of recipe.ingredients"
-        >
-          {{ item }}
-        </li>
-      </ul>
-
-      <!-- COOKING INSTRUCTIONS -->
-      <h5 class="fw-bold mt-4">👨‍🍳 Cooking Instructions</h5>
-      <ol class="list-group list-group-numbered">
-        <li
-          class="list-group-item"
-          *ngFor="let step of recipe.instructions"
-        >
-          {{ step }}
-        </li>
-      </ol>
 
     </div>
+  </section>
 
-  </div>
+  <!-- RELATED -->
+  @if (relatedRecipes.length) {
+    <section class="band band--paper related" aria-labelledby="related-title">
+      <div class="wrap">
+        <p class="kicker" appReveal="rule">Keep cooking</p>
+        <h2 id="related-title" class="display-lg related__title" appReveal="mask">Related recipes</h2>
 
-  <!-- RELATED RECIPES -->
-  <div class="mt-5" *ngIf="relatedRecipes?.length">
-
-    <h4 class="fw-bold mb-4">Related Recipes</h4>
-
-    <div class="row g-4">
-
-      <div
-        class="col-md-3"
-        *ngFor="let item of relatedRecipes"
-      >
-        <div
-          class="card shadow-sm border-0 rounded-4 h-100"
-          [routerLink]="['/view-recipe', item._id]"
-          style="cursor:pointer"
-        >
-          <img
-            [src]="item.image"
-            class="card-img-top rounded-top-4"
-          />
-          <div class="card-body text-center">
-            <small class="fw-semibold">
-              {{ item.title }}
-            </small>
-          </div>
-        </div>
+        <ul class="related__grid">
+          @for (item of relatedRecipes; track item._id) {
+            <li><app-recipe-tile appReveal="tile batch" [recipe]="item" /></li>
+          }
+        </ul>
       </div>
+    </section>
+  }
 
-    </div>
-
-  </div>
-
-</div>
+}

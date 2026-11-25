@@ -1,32 +1,44 @@
-const express=require('express')
+const express = require('express')
 const recipeController = require('../controller/recipeController')
 const userController = require('../controller/userController')
 const savedRecipeController = require('../controller/savedRecipeController')
 const downloadController = require('../controller/downloadController')
 const testimonyController = require('../controller/testimonyController')
 const jwtMiddleware = require('../middleware/jwtMiddleware')
-const route=express.Router()
+const adminMiddleware = require('../middleware/adminMiddleware')
+const { loginLimiter, registrationLimiter } = require('../middleware/rateLimiters')
+const v = require('../validators')
 
-route.get('/api/allrecipes',recipeController.getRecipes)
-route.post('/api/registration',userController.registerUser)
-route.post('/api/login',userController.loginUser)
-route.get('/api/viewRecipe/:id',recipeController.viewRecipe)
-route.get('/api/relatedRecipe',jwtMiddleware,recipeController.getRelatedRecipe)
-route.post('/api/savedRecipe/:id',jwtMiddleware,savedRecipeController.addSavedRecipe)
-route.get('/api/getSavedRecipes',jwtMiddleware,savedRecipeController.getSavedRecipe)
-route.delete('/api/deleteSavedRecipe/:id',jwtMiddleware,savedRecipeController.deleteSavedRecipe)
-route.post('/api/addDownload/:id',jwtMiddleware,downloadController.addDownload)
-route.get('/api/getDownload',jwtMiddleware,downloadController.getDownload)
-route.delete('/api/deleteDownload/:id',jwtMiddleware,downloadController.deleteDownload)
-route.get('/api/getAllUsers',userController.getAllUsers)
-route.get('/api/getDownloadedRecipesList',downloadController.getDownloadedRecipeList)
-route.post('/api/addTestimony',jwtMiddleware,testimonyController.addTestimony)
-route.get('/api/getTestimony',testimonyController.getTestimony)
-route.get('/api/getApprovedTestimony', testimonyController.getApprovedTestimony);
-route.patch('/api/updateTestimony/:id', testimonyController.updateTestimony);
+const route = express.Router()
 
-route.post('/api/addRecipe',recipeController.addRecipe)
-route.put('/api/updateRecipe/:id', recipeController.updateRecipe);
-route.delete('/api/deleteRecipe/:id',recipeController.deleteRecipe)
+// Everything under "admin" requires a valid JWT *and* the Admin role.
+const admin = [jwtMiddleware, adminMiddleware]
 
-module.exports=route
+// ---- Public ----
+route.get('/api/allRecipes', recipeController.getRecipes)
+route.get('/api/viewRecipe/:id', v.id, recipeController.viewRecipe)
+route.get('/api/relatedRecipe', v.relatedRecipe, recipeController.getRelatedRecipe)
+route.get('/api/getApprovedTestimony', testimonyController.getApprovedTestimony)
+route.post('/api/registration', registrationLimiter, v.register, userController.registerUser)
+route.post('/api/login', loginLimiter, v.login, userController.loginUser)
+
+// ---- Authenticated users ----
+route.patch('/api/updateProfile', jwtMiddleware, v.updateProfile, userController.updateProfile)
+route.post('/api/savedRecipe/:id', jwtMiddleware, v.id, savedRecipeController.addSavedRecipe)
+route.get('/api/getSavedRecipes', jwtMiddleware, savedRecipeController.getSavedRecipe)
+route.delete('/api/deleteSavedRecipe/:id', jwtMiddleware, v.id, savedRecipeController.deleteSavedRecipe)
+route.post('/api/addDownload/:id', jwtMiddleware, v.id, downloadController.addDownload)
+route.get('/api/getDownload', jwtMiddleware, downloadController.getDownload)
+route.delete('/api/deleteDownload/:id', jwtMiddleware, v.id, downloadController.deleteDownload)
+route.post('/api/addTestimony', jwtMiddleware, v.addTestimony, testimonyController.addTestimony)
+
+// ---- Admin only ----
+route.get('/api/getAllUsers', ...admin, userController.getAllUsers)
+route.get('/api/getDownloadedRecipesList', ...admin, downloadController.getDownloadedRecipeList)
+route.get('/api/getTestimony', ...admin, testimonyController.getTestimony)
+route.patch('/api/updateTestimony/:id', ...admin, v.updateTestimony, testimonyController.updateTestimony)
+route.post('/api/addRecipe', ...admin, v.addRecipe, recipeController.addRecipe)
+route.put('/api/updateRecipe/:id', ...admin, v.updateRecipe, recipeController.updateRecipe)
+route.delete('/api/deleteRecipe/:id', ...admin, v.id, recipeController.deleteRecipe)
+
+module.exports = route

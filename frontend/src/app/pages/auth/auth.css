@@ -1,0 +1,264 @@
+/* Shared poster layout for Login + Register.
+   Paper-red field, big display headline on the left, a cream form panel with a
+   hard yolk offset on the right, and a platter motif (concentric rings) behind. */
+:host {
+  display: block;
+}
+
+.auth {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: calc(100svh - var(--header-h));
+  padding-block: clamp(2.5rem, 6vw, 5rem) clamp(3rem, 7vw, 6rem);
+  overflow: hidden;
+}
+
+/* Decorative tabletop: a deeper-red disc ringed in cream — hard edges only. */
+.auth__platter {
+  position: absolute;
+  left: -14%;
+  bottom: -74%;
+  width: min(48rem, 100vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 0 0 clamp(8px, 1.2vw, 16px) var(--paper), 0 0 0 clamp(11px, 1.6vw, 21px) var(--ink);
+  pointer-events: none;
+}
+
+.auth__platter::before {
+  content: '';
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  border: var(--rule) solid var(--paper);
+}
+
+.auth__grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .auth__grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  }
+}
+
+.auth__title {
+  margin-bottom: 1.25rem;
+  font-size: clamp(2.75rem, 7.5vw, 6rem);
+  line-height: 0.9;
+  overflow-wrap: break-word;
+}
+
+.auth__lede {
+  margin-bottom: 0;
+}
+
+/* ---- Form panel ---- */
+.auth__panel {
+  width: 100%;
+  max-width: 34rem;
+  justify-self: start;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  background: var(--ink);
+  color: var(--broth);
+  border: var(--rule) solid var(--broth);
+  box-shadow: 8px 8px 0 var(--yolk);
+}
+
+@media (min-width: 600px) {
+  .auth__panel {
+    box-shadow: 12px 12px 0 var(--yolk);
+  }
+}
+
+@media (min-width: 900px) {
+  .auth__panel {
+    justify-self: end;
+  }
+}
+
+.auth__panel-title {
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.9rem;
+  border-bottom: var(--rule) solid var(--broth);
+}
+
+.auth__field {
+  margin-bottom: 1.1rem;
+}
+
+.auth__submit {
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
+@media (min-width: 600px) {
+  .auth__submit {
+    width: auto;
+    min-width: 12rem;
+  }
+}
+
+.auth__switch {
+  margin: 1.5rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--broth) 30%, transparent);
+  font-size: 0.95rem;
+}
+
+.auth__switch a {
+  font-weight: 800;
+}
+
+/* ---- Motion: platter ---- */
+.auth__platter {
+  translate: var(--px, 0) var(--py, 0); /* written by appPlatterDrift, 8px at most */
+}
+
+/* a dashed ring between the rim and the solid ring, turning against the clock */
+.auth__platter::after {
+  content: '';
+  position: absolute;
+  inset: 7%;
+  border-radius: 50%;
+  border: var(--rule) dashed var(--paper);
+  animation: auth-turn 60s linear infinite reverse;
+}
+
+@keyframes auth-turn {
+  to { rotate: 360deg; }
+}
+
+/* ---- Motion: fields ---- */
+/* focus keeps the global ring (outline + 2px broth) and adds a hard yolk offset beyond it */
+.form-control {
+  transition: box-shadow var(--dur-micro) var(--ease);
+}
+
+.form-control:focus {
+  position: relative;
+  z-index: 1;
+  border-color: var(--broth); /* an invalid field keeps the brand border while focused */
+  box-shadow: var(--mark, 0 0 transparent), 0 0 0 2px var(--broth), 4px 4px 0 5px var(--yolk);
+}
+
+.form-control.is-invalid {
+  --mark: inset 6px 0 0 var(--paper);
+}
+
+/* the message opens by its grid row, not by height; hidden means hidden to everyone */
+.auth__field .invalid-feedback {
+  display: grid;
+  grid-template-rows: 0fr;
+  padding: 0;
+  visibility: hidden;
+  transition: grid-template-rows var(--dur-ui) var(--ease-arrive), visibility 0s var(--dur-ui);
+}
+
+.auth__field .is-invalid ~ .invalid-feedback {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.invalid-feedback > span {
+  min-height: 0;
+  padding-inline: 0.7rem;
+  overflow: hidden;
+}
+
+.invalid-feedback > span::before,
+.invalid-feedback > span::after {
+  content: '';
+  display: block;
+  height: 0.4rem;
+}
+
+/* a little more room on top, so a focused field's ring and offset never touch the words */
+.invalid-feedback > span::before {
+  height: 0.55rem;
+}
+
+/* ---- Password field with its show/hide button ---- */
+.auth__pw {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+}
+
+.auth__pw .invalid-feedback {
+  grid-column: 1 / -1;
+}
+
+.auth__eye {
+  padding: 0;
+  font-size: 1.15rem;
+  color: var(--broth);
+  background: var(--ink);
+  border: 2px solid var(--broth);
+  border-left: 0;
+  cursor: pointer;
+}
+
+.auth__eye:hover {
+  background: var(--yolk);
+}
+
+.auth__eye[aria-pressed='true'] {
+  color: var(--ink);
+  background: var(--broth);
+}
+
+/* ---- Submit: both labels share one cell, so the button never changes width ---- */
+.auth__submit {
+  display: inline-grid;
+  place-items: center;
+}
+
+.auth__go {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  visibility: hidden;
+}
+
+.auth__go.is-on {
+  visibility: visible;
+}
+
+.auth__go .loader {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.auth__go .loader::before {
+  inset: 2px;
+  border-width: 2px;
+}
+
+.auth__go .loader::after {
+  border-width: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth__platter {
+    translate: none;
+  }
+
+  .auth__platter::after {
+    animation: none;
+  }
+
+  .form-control,
+  .auth__field .invalid-feedback {
+    transition: none;
+  }
+}

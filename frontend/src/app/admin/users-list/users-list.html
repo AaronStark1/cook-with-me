@@ -1,51 +1,58 @@
-<div class="container-fluid py-4">
-
-  <h2 class="fw-bold text-warning text-center mb-4">
-    All Users List
-  </h2>
-
-  <div class="card shadow rounded-4 p-4 border-0">
-
-    <table class="table align-middle">
-
-      <thead>
-        <tr class="text-muted">
-          <th>#</th>
-          <th>Profile</th>
-          <th>Name</th>
-          <th>Email</th>
-        </tr>
-      </thead>
-
-      <tbody>
-
-        <tr *ngFor="let user of users; let i = index">
-
-          <td>{{ i + 1 }}</td>
-
-          <td>
-            <img
-              src="https://cdn-icons-png.flaticon.com/512/3177/3177440.png"
-              width="50"
-              height="50"
-              class="rounded-circle object-fit-cover"
-            />
-          </td>
-
-          <td class="fw-semibold">
-            {{ user.username }}
-          </td>
-
-          <td>
-            {{ user.email }}
-          </td>
-
-        </tr>
-
-      </tbody>
-
-    </table>
-
+<header class="page-head">
+  <div>
+    <p class="kicker">Community</p>
+    <h1>All Users List</h1>
   </div>
+  @if (!loading && !errorMessage) {
+    <p class="label muted mb-0" aria-live="polite">{{ users.length }} {{ users.length === 1 ? 'user' : 'users' }}</p>
+  }
+</header>
 
-</div>
+@if (errorMessage) {
+  <div class="alert alert-danger" role="alert">{{ errorMessage }}</div>
+}
+
+<section class="panel" aria-label="Users">
+
+  @if (loading) {
+    <div class="state" role="status">
+      <span class="loader" aria-hidden="true"></span>
+      <p class="state__text">Loading users…</p>
+    </div>
+  } @else if (!users.length) {
+    <div class="state">
+      <p class="state__title">No users yet</p>
+      <p class="state__text muted">Registered readers will appear here.</p>
+    </div>
+  } @else {
+    <div class="table-responsive" role="region" aria-label="Users table" tabindex="0">
+      <table class="table align-middle mb-0">
+
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Name</th>
+            <th scope="col">Email</th>
+          </tr>
+        </thead>
+
+        <tbody appRowsIn>
+          @for (user of users; track user._id; let i = $index) {
+            <tr>
+              <td class="num">{{ i + 1 }}</td>
+              <td class="fw-semibold">
+                <span class="d-inline-flex align-items-center gap-3">
+                  <span class="initial" aria-hidden="true">{{ (user.username || '?').charAt(0) }}</span>
+                  {{ user.username }}
+                </span>
+              </td>
+              <td>{{ user.email }}</td>
+            </tr>
+          }
+        </tbody>
+
+      </table>
+    </div>
+  }
+
+</section>

@@ -1,0 +1,226 @@
+/* Admin shell: broth sidebar + cream work area. Unencapsulated — every rule is under .admin. */
+app-admin-layout {
+  display: block;
+}
+
+.admin {
+  display: flex;
+  min-height: 100vh;
+  background: var(--ink);
+  color: var(--broth);
+}
+
+/* ---- Sidebar ---- */
+.admin .admin__side {
+  position: sticky;
+  top: 0;
+  flex: none;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  width: 17rem;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--broth);
+  color: var(--ink);
+}
+
+.admin .admin__brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.5rem 1.5rem 1.25rem;
+  border-bottom: var(--rule) solid var(--ink);
+}
+
+.admin .wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  line-height: 1;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.admin .wordmark__b {
+  padding: 0.28em 0.4em 0.2em;
+  background: var(--yolk);
+  color: var(--broth);
+}
+
+.admin .admin__badge {
+  min-height: 1.5rem;
+}
+
+.admin .admin__toggle {
+  display: none;
+}
+
+.admin .admin__nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.admin .admin__who {
+  margin: 0;
+  padding: 1rem 1.5rem 0.75rem;
+  color: var(--muted);
+}
+
+.admin .admin__nav ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin .admin__nav a,
+.admin .admin__nav button {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.55rem 1.5rem 0.55rem 1.25rem;
+  font: 800 0.78rem/1.2 var(--font-body);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: left;
+  text-decoration: none;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-left: 6px solid transparent;
+  cursor: pointer;
+}
+
+.admin .admin__nav a:hover,
+.admin .admin__nav button:hover {
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+}
+
+.admin .admin__nav a.is-active {
+  background: var(--yolk);
+  color: var(--broth);
+  border-left-color: var(--ink);
+}
+
+.admin .admin__nav i {
+  font-size: 1.05rem;
+}
+
+.admin .admin__nav-foot {
+  margin-top: auto !important;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 35%, transparent);
+}
+
+/* ---- Work area ---- */
+.admin .admin__content {
+  flex: 1;
+  min-width: 0; /* lets wide tables scroll inside their panel instead of stretching the page */
+  padding: clamp(1.25rem, 3vw, 2.5rem) clamp(1rem, 3vw, 3rem) 4rem;
+}
+
+/* ---- Below 768px: sidebar becomes a sticky top bar with a disclosure menu ---- */
+@media (max-width: 767.98px) {
+  .admin {
+    flex-direction: column;
+  }
+
+  .admin .admin__side {
+    z-index: 50;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    align-self: stretch;
+    border-bottom: var(--rule) solid var(--yolk);
+  }
+
+  .admin .admin__brand {
+    flex-wrap: nowrap;
+    padding: 0.5rem var(--gutter);
+    border-bottom: 0;
+  }
+
+  .admin .admin__badge {
+    margin-right: auto;
+  }
+
+  .admin .admin__toggle {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.4rem 0.9rem;
+    font: 800 0.8125rem/1 var(--font-body);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: transparent;
+    border: 2px solid var(--ink);
+    cursor: pointer;
+  }
+
+  .admin .admin__toggle[aria-expanded='true'] {
+    background: var(--ink);
+    color: var(--broth);
+  }
+
+  .admin .admin__nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    max-height: calc(100dvh - 5rem);
+    overflow-y: auto;
+    background: var(--broth);
+    border-top: var(--rule) solid var(--ink);
+    border-bottom: var(--rule) solid var(--yolk);
+  }
+
+  .admin .admin__nav.is-open {
+    display: flex;
+  }
+
+  .admin .admin__nav a,
+  .admin .admin__nav button {
+    padding-inline: var(--gutter);
+  }
+
+  .admin .admin__who {
+    padding-inline: var(--gutter);
+  }
+}
+
+/* very narrow phones: keep wordmark + badge + menu on one row without overflowing */
+@media (max-width: 420px) {
+  .admin .admin__brand {
+    gap: 0.5rem;
+  }
+
+  .admin .wordmark {
+    font-size: 1.05rem;
+  }
+
+  .admin .admin__toggle {
+    padding-inline: 0.7rem;
+    letter-spacing: 0.1em;
+  }
+}
+
+@media (max-width: 360px) {
+  .admin .admin__badge {
+    display: none; /* the sidebar header already says "Signed in as …" */
+  }
+
+  .admin .admin__toggle {
+    margin-left: auto;
+  }
+}

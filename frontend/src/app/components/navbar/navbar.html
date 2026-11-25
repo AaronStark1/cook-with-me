@@ -1,93 +1,72 @@
-<nav class="navbar navbar-expand-lg bg-warning px-4 py-3 rounded shadow">
+<header class="site-header">
+  <div class="site-header__bar wrap">
 
-  <!-- LEFT: LOGO -->
-  <a
-    class="navbar-brand fw-bold text-white d-flex align-items-center"
-    routerLink="/"
-  >
-    <img src="assets/chef.png" width="40" class="me-2" />
-    CookWithMe
-  </a>
+    <a class="wordmark intro-rise" style="--intro-d: 250ms" routerLink="/" aria-label="Cook With Me — home">
+      <span class="wordmark__a">Cook</span><span class="wordmark__b">With Me</span>
+    </a>
 
-  <!-- CENTER: MENU -->
-  <div class="collapse navbar-collapse justify-content-center">
-    <ul class="navbar-nav gap-4">
-
-      <li class="nav-item">
-        <a class="nav-link text-white" routerLink="/">Home</a>
-      </li>
-
-      <li class="nav-item">
-        <a class="nav-link text-white" routerLink="/all-recipes">Recipes</a>
-      </li>
-
-      <li class="nav-item">
-        <a class="nav-link text-white" routerLink="/about">About</a>
-      </li>
-
-      <li class="nav-item">
-        <a class="nav-link text-white" routerLink="/contact">Contact</a>
-      </li>
-
-    </ul>
-  </div>
-
-  <!-- RIGHT: AUTH DROPDOWN -->
-  <div class="dropdown">
-
-    <!-- IF LOGGED IN -->
     <button
-      *ngIf="token"
-      class="btn btn-outline-light rounded-pill dropdown-toggle"
-      data-bs-toggle="dropdown"
+      #menuButton
+      type="button"
+      class="site-header__toggle"
+      [attr.aria-expanded]="menuOpen()"
+      aria-controls="site-nav"
+      (click)="toggleMenu()"
     >
-      <i class="bi bi-person me-1"></i>
-      {{ userDetails?.username || 'User' }}
+      <span aria-hidden="true" class="site-header__toggle-bars"><span></span></span>
+      {{ menuOpen() ? 'Close' : 'Menu' }}
     </button>
 
-    <!-- IF NOT LOGGED IN -->
-    <button
-      *ngIf="!token"
-      class="btn btn-outline-light rounded-pill dropdown-toggle"
-      data-bs-toggle="dropdown"
-    >
-      <i class="bi bi-person"></i>
-    </button>
+    <nav id="site-nav" class="site-nav" [class.is-open]="menuOpen()" aria-label="Primary">
 
-    <ul class="dropdown-menu dropdown-menu-end">
+      <ul #list class="site-nav__list intro-rise" style="--intro-d: 330ms">
+        <li><a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">Home</a></li>
+        <li><a routerLink="/all-recipes" routerLinkActive="is-active" ariaCurrentWhenActive="page">Recipes</a></li>
+        <li><a routerLink="/about" routerLinkActive="is-active" ariaCurrentWhenActive="page">About</a></li>
+        <li><a routerLink="/contact" routerLinkActive="is-active" ariaCurrentWhenActive="page">Contact</a></li>
+      </ul>
 
-      <!-- Logged Out -->
-      <ng-container *ngIf="!token">
-        <li>
-          <a class="dropdown-item" routerLink="/login">Login</a>
-        </li>
-        <li>
-          <a class="dropdown-item" routerLink="/register">Register</a>
-        </li>
-      </ng-container>
+      <div class="account intro-rise" style="--intro-d: 410ms">
+        @if (auth.isLoggedIn()) {
 
-      <!-- Logged In -->
-      <ng-container *ngIf="token">
-        <li>
-          <a class="dropdown-item" routerLink="/profile">
-            View Profile
-          </a>
-        </li>
-        <li>
-          <a class="dropdown-item" routerLink="/saved-recipes">
-            My Collections
-          </a>
-        </li>
-        <li><hr class="dropdown-divider"></li>
-        <li>
-          <button class="dropdown-item text-danger" (click)="logout()">
-            Logout
+          <button
+            #accountButton
+            type="button"
+            class="account__toggle"
+            [attr.aria-expanded]="accountOpen()"
+            aria-controls="account-menu"
+            (click)="toggleAccount()"
+          >
+            <i class="bi bi-person-fill" aria-hidden="true"></i>
+            <span class="account__name">{{ auth.user()?.username || 'Account' }}</span>
+            <i class="bi bi-chevron-down account__chevron" aria-hidden="true"></i>
           </button>
-        </li>
-      </ng-container>
 
-    </ul>
+          <div id="account-menu" class="account__menu" [class.is-open]="accountOpen()">
+            <p class="account__who label">Signed in as {{ auth.user()?.username || 'you' }}</p>
+            <ul>
+              @if (auth.isAdmin()) {
+                <li><a routerLink="/admin">Admin panel</a></li>
+              }
+              <li><a routerLink="/profile">Profile</a></li>
+              <li><a routerLink="/saved-recipes">My collection</a></li>
+              <li><button type="button" (click)="logout()">Log out</button></li>
+            </ul>
+          </div>
+
+        } @else {
+
+          <div class="account__guest">
+            <a class="btn-cwm btn-cwm--ghost btn-cwm--sm" routerLink="/login">Log in</a>
+            <a class="btn-cwm btn-cwm--sm" routerLink="/register">Join</a>
+          </div>
+
+        }
+      </div>
+
+    </nav>
 
   </div>
-
-</nav>
+  <!-- reading progress, drawn on the header's bottom rule (decorative) -->
+  <span class="site-header__progress" aria-hidden="true"></span>
+</header>

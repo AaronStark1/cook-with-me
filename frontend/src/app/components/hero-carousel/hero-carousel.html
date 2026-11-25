@@ -1,0 +1,94 @@
+<section
+  #hero
+  class="hero"
+  [class.is-reduced]="reduced()"
+  [class.is-static]="!count()"
+  [class.is-idle]="idle()"
+  [style.--wheel]="wheel() + 'deg'"
+  aria-labelledby="hero-title"
+  (pointerenter)="onPointer($event, true)"
+  (pointerleave)="onPointer($event, false)"
+  (focusin)="onFocusIn()"
+  (focusout)="onFocusOut($event, hero)"
+>
+
+  <!-- Flat colour field. The active colour sits underneath; the previous one leaves on a single
+       panel with a hard yolk edge, so the type is only ever on one flat colour or the other. -->
+  <div class="hero__field" aria-hidden="true">
+    @for (color of colors; track color; let i = $index) {
+      <span class="hero__field-layer" [class.is-on]="i === colorIndex()" [style.background-color]="color"></span>
+    }
+    <span
+      class="hero__sweep"
+      [class.is-on]="leavingColor() !== null"
+      [class.is-back]="dir() === -1"
+      [style.background-color]="leavingColor() !== null ? colors[leavingColor()!] : null"
+    ></span>
+  </div>
+
+  <!-- Poster type -->
+  <div class="hero__type">
+    <p class="kicker intro-rise" style="--intro-d: 330ms">Recipes to discover, save &amp; cook</p>
+
+    <h1 id="hero-title" class="hero__title display">
+      <span class="hero__line"><span class="intro-word" style="--w: 0">Good</span> <span class="intro-word" style="--w: 1">food.</span></span>
+      <span class="hero__line"><span class="intro-word" style="--w: 2">Your</span> <span class="intro-word" style="--w: 3">way.</span></span>
+    </h1>
+
+    <p class="hero__lede lede intro-rise" style="--intro-d: 410ms">
+      Discover something delicious to cook tonight — approachable recipes you can save, download and make your own.
+    </p>
+
+    <div class="hero__cta intro-rise" style="--intro-d: 490ms">
+      <a class="btn-cwm" routerLink="/all-recipes">Explore recipes <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      @if (auth.isLoggedIn()) {
+        <a class="btn-cwm btn-cwm--ghost" routerLink="/saved-recipes">My collection</a>
+      } @else {
+        <a class="btn-cwm btn-cwm--ghost" routerLink="/register">Join</a>
+      }
+    </div>
+  </div>
+
+  <!-- Carousel -->
+  <div
+    class="hero__carousel"
+    role="group"
+    aria-roledescription="carousel"
+    aria-label="Featured recipes"
+    (keydown.arrowleft)="advance(-1)"
+    (keydown.arrowright)="advance(1)"
+    (keydown.home)="goTo(0); $event.preventDefault()"
+    (keydown.end)="goTo(count() - 1); $event.preventDefault()"
+  >
+
+    <app-hero-stage
+      [dishes]="dishes()"
+      [empty]="!count()"
+      [recipe]="activeRecipe()"
+      [dir]="dir()"
+      [reduced]="reduced()"
+      [compact]="compact()"
+      [dragging]="dragging()"
+      [duration]="duration"
+    />
+
+    <app-hero-info
+      [recipe]="activeRecipe()"
+      [meta]="meta()"
+      [items]="items()"
+      [activeIndex]="activeIndex()"
+      [swap]="swap()"
+      [reduced]="reduced()"
+      [userPaused]="userPaused()"
+      [running]="canAutoplay()"
+      [cycleMs]="cycleMs()"
+      (step)="advance($event)"
+      (pick)="goTo($event)"
+      (toggle)="toggleAutoplay()"
+    />
+
+    <p class="visually-hidden" aria-live="polite" aria-atomic="true">{{ announcement() }}</p>
+
+  </div>
+
+</section>

@@ -1,4 +1,18 @@
-<app-navbar></app-navbar>
+<a class="skip-link" href="#main" (click)="skipToMain($event)">Skip to main content</a>
 
-<router-outlet></router-outlet>
-<app-footer></app-footer>
+@if (!isAdminArea()) {
+  <app-navbar></app-navbar>
+}
+
+<main id="main" tabindex="-1">
+  <router-outlet></router-outlet>
+</main>
+
+@if (!isAdminArea()) {
+  <app-footer></app-footer>
+}
+
+<app-toasts />
+
+<!-- route changes are announced here; focus moves to <main> -->
+<p class="visually-hidden" aria-live="polite" aria-atomic="true" id="route-status">{{ announcement() }}</p>

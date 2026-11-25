@@ -1,61 +1,83 @@
+const mongoose = require('mongoose')
 const users = require('../models/userModel')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 
+const TOKEN_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '1d'
+
+// Compared against when the email is unknown, so response time does not reveal
+// whether an account exists.
+const DUMMY_HASH = bcrypt.hashSync('not-a-real-password', 10)
+
+const toPublicUser = (user) => ({
+    _id: user._id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    profilePic: user.profilePic
+})
+
+const signToken = (user) =>
+    jwt.sign({ userId: user._id, role: user.role }, process.env.JWT_KEY, {
+        expiresIn: TOKEN_EXPIRES_IN,
+        algorithm: 'HS256'
+    })
+
 exports.registerUser = async (req, res) => {
     const { username, email, password } = req.body
-    try {
-        const existingUser = await users.findOne({ email })
-        if (existingUser) {
-            res.status(402).json({ message: "user email exist" })
-        }
-        else {
-            const encryptedPassword = await bcrypt.hash(password, 10)
-            console.log(encryptedPassword);
 
-            const newUser = new users({ username, email, password: encryptedPassword })
-            await newUser.save()
-            res.status(200).json({ message: "user registration successful", newUser })
-        }
+    const existingUser = await users.findOne({ email })
+    if (existingUser) {
+        return res.status(409).json({ message: 'Email is already registered' })
     }
-    catch (err) {
-        console.log("Registration error");
 
-    }
+    const encryptedPassword = await bcrypt.hash(password, 10)
+    // `role` is never read from the request; new accounts are always plain users.
+    const newUser = await users.create({ username, email, password: encryptedPassword })
+
+    res.status(201).json({ message: 'user registration successful', user: toPublicUser(newUser) })
 }
 
 exports.loginUser = async (req, res) => {
     const { email, password } = req.body
-    try {
-        const existingUser = await users.findOne({ email })
-        if (!existingUser) {
-            return res.status(402).json({ message: "User not found" })
-        }
-        const userPassword = await bcrypt.compare(password, existingUser.password)
-        if (!userPassword && existingUser.password !== password) {
-            return res.status(401).json({ message: "Password mismatch" })
-        }
-        const token = jwt.sign({ userId: existingUser._id }, process.env.JWT_KEY)
-        console.log(token);
 
-        res.status(200).json({
-            message: "Login Success",
-            user: existingUser,
-            token
-        })
-    }
-    catch (err) {
-        console.log("Login error");
+    const existingUser = await users.findOne({ email }).select('+password')
+    const passwordMatches = await bcrypt.compare(password, existingUser ? existingUser.password : DUMMY_HASH)
 
+    // One generic message for both cases, to avoid account enumeration.
+    if (!existingUser || !passwordMatches) {
+        return res.status(401).json({ message: 'Invalid credentials' })
     }
+
+    res.status(200).json({
+        message: 'Login Success',
+        user: toPublicUser(existingUser),
+        token: signToken(existingUser)
+    })
+}
+
+exports.updateProfile = async (req, res) => {
+    const { username, email } = req.body
+
+    // sanitizeFilter is on, so server-built operators must be marked as trusted
+    const emailTaken = await users.findOne({ email, _id: mongoose.trusted({ $ne: req.userId }) })
+    if (emailTaken) {
+        return res.status(409).json({ message: 'Email is already registered' })
+    }
+
+    const updated = await users.findByIdAndUpdate(
+        req.userId,
+        { username, email },
+        { returnDocument: 'after', runValidators: true }
+    )
+    if (!updated) {
+        return res.status(404).json({ message: 'User not found' })
+    }
+
+    res.status(200).json({ message: 'Profile updated', user: toPublicUser(updated) })
 }
 
 exports.getAllUsers = async (req, res) => {
-    try {
-        const getUsers=await users.find({role:"User"})
-        res.status(200).json(getUsers)
-    } catch (err) {
-        console.log("Login error");
-        res.status(500).json(err)
-    }
+    const allUsers = await users.find({ role: 'User' }).select('username email profilePic role')
+    res.status(200).json(allUsers)
 }

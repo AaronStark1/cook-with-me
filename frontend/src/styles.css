@@ -1,2 +1,531 @@
-/* You can add global styles to this file, and also import other style files */
-@import "bootstrap/dist/css/bootstrap.min.css";
+/* ==========================================================================
+   COOK WITH ME — global design system
+   Brand tokens, base styles and shared primitives. Component CSS stays scoped
+   next to each component; anything reused across routes lives here.
+
+   Palette (contrast verified — never put yolk text on paper/surface red):
+     ink  (cream) on paper  5.07  AA     ink   on surface 6.82  AA
+     ink          on broth 17.07  AAA    broth on yolk   12.18  AAA
+     broth        on ink   17.07  AAA    muted on paper   4.66  AA
+   ========================================================================== */
+
+/* ---- Fonts (self-hosted, latin subset only; display swap + system fallbacks) ---- */
+@font-face {
+  font-family: 'Dela Gothic One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../node_modules/@fontsource/dela-gothic-one/files/dela-gothic-one-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Archivo Variable';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('../node_modules/@fontsource-variable/archivo/files/archivo-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+/* ---- Tokens ---- */
+:root {
+  --paper: #C8281C;     /* tomato — the page field */
+  --ink: #FFF3E0;       /* cream — text on red/broth, and cream bands */
+  --surface: #A51F15;   /* deeper red — raised blocks on paper */
+  --yolk: #FFC93C;      /* accent — blocks, rules, focus. Never text on red */
+  --broth: #1C0F0A;     /* near-black — text on yolk/cream, dark bands */
+  --muted: #FFE6DA;     /* soft cream — secondary text on red/broth */
+  --ink-soft: #5E4B43;  /* secondary text on cream bands (7.5:1) */
+
+  --font-display: 'Dela Gothic One', 'Arial Black', 'Impact', sans-serif;
+  --font-body: 'Archivo Variable', 'Archivo', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  --gutter: clamp(1rem, 4vw, 3rem);
+  --wrap: 1440px;
+  --header-h: 68px;
+  --rule: 3px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* ---- Base ---- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--header-h) + 1rem);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--yolk);
+  color: var(--broth);
+}
+
+img {
+  max-width: 100%;
+}
+
+h1, h2, h3, h4, h5, h6,
+.display {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 0.98;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: inherit;
+}
+
+h1 { font-size: clamp(2.25rem, 6vw, 4.5rem); }
+h2 { font-size: clamp(1.75rem, 4vw, 3rem); }
+h3 { font-size: clamp(1.35rem, 2.6vw, 2rem); }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.05rem; }
+h6 { font-size: 0.95rem; }
+
+p {
+  margin: 0 0 1rem;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.22em;
+}
+
+a:hover {
+  color: inherit;
+  text-decoration-thickness: 4px;
+}
+
+button {
+  font: inherit;
+}
+
+/* One focus ring that is visible on every brand surface: a broth inner ring
+   plus a yolk outer ring (works on red, cream, yolk and broth). */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--yolk);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--broth);
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -5rem;
+  z-index: 1000;
+  padding: 0.85rem 1.25rem;
+  background: var(--yolk);
+  color: var(--broth);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 2px solid var(--broth);
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+main:focus {
+  outline: none; /* programmatic focus target for the skip link only */
+}
+
+/* ---- Display type scale ---- */
+.display-xl { font-size: clamp(2.6rem, 9.5vw, 8rem); line-height: 0.92; }
+.display-lg { font-size: clamp(2.1rem, 6vw, 5rem); }
+.display-md { font-size: clamp(1.6rem, 3.6vw, 3rem); }
+.display-sm { font-size: clamp(1.25rem, 2.2vw, 1.75rem); }
+.display-xs { font-size: 1.05rem; line-height: 1.05; }
+
+.numeral {
+  font-family: var(--font-display);
+  line-height: 0.8;
+  letter-spacing: -0.02em;
+}
+
+.label {
+  font: 800 0.75rem/1.2 var(--font-body);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.lede {
+  font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+  line-height: 1.45;
+  max-width: 38rem;
+}
+
+/* label with a leading solid rule — section "kickers" */
+.kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 0 0 1rem;
+  font: 800 0.75rem/1.2 var(--font-body);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.kicker::before {
+  content: '';
+  flex: none;
+  width: 2.75rem;
+  height: var(--rule);
+  background: currentColor;
+}
+
+.rule {
+  margin: 0;
+  border: 0;
+  border-top: var(--rule) solid currentColor;
+  opacity: 1;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* ---- Layout: wrap + colour bands ---- */
+.wrap {
+  width: 100%;
+  max-width: var(--wrap);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.band {
+  position: relative;
+  padding-block: clamp(2.75rem, 7vw, 6rem);
+  background: var(--band-bg, var(--paper));
+  color: var(--band-fg, var(--ink));
+}
+
+.band--paper   { --band-bg: var(--paper);   --band-fg: var(--ink); }
+.band--surface { --band-bg: var(--surface); --band-fg: var(--ink); }
+.band--broth   { --band-bg: var(--broth);   --band-fg: var(--ink); }
+.band--yolk    { --band-bg: var(--yolk);    --band-fg: var(--broth); }
+.band--cream   { --band-bg: var(--ink);     --band-fg: var(--broth); }
+
+.band--cream .muted,
+.band--yolk .muted {
+  color: var(--ink-soft);
+}
+
+.band--rule-top {
+  border-top: var(--rule) solid var(--ink);
+}
+
+.band--cream.band--rule-top,
+.band--yolk.band--rule-top {
+  border-top-color: var(--broth);
+}
+
+/* ---- Buttons (square, hard-edged; hover inverts) ---- */
+.btn-cwm {
+  --bg: var(--yolk);
+  --fg: var(--broth);
+  --bd: var(--broth);
+  --hbg: var(--broth);
+  --hfg: var(--yolk);
+  --hbd: var(--broth);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 48px;
+  min-width: 44px;
+  padding: 0.7rem 1.4rem;
+  font: 800 0.8125rem/1.1 var(--font-body);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  text-decoration: none;
+  color: var(--fg);
+  background: var(--bg);
+  border: 2px solid var(--bd);
+  border-radius: 0;
+  cursor: pointer;
+  transition: background-color 0.12s var(--ease), color 0.12s var(--ease), border-color 0.12s var(--ease);
+}
+
+.btn-cwm:hover {
+  color: var(--hfg);
+  background: var(--hbg);
+  border-color: var(--hbd);
+  text-decoration: none;
+}
+
+.btn-cwm:disabled,
+.btn-cwm[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-cwm--ink   { --bg: var(--ink);   --fg: var(--broth); --bd: var(--broth); --hbg: var(--broth); --hfg: var(--ink); --hbd: var(--broth); }
+.btn-cwm--broth { --bg: var(--broth); --fg: var(--ink);   --bd: var(--broth); --hbg: var(--yolk);  --hfg: var(--broth); --hbd: var(--broth); }
+.btn-cwm--red   { --bg: var(--paper); --fg: var(--ink);   --bd: var(--broth); --hbg: var(--broth); --hfg: var(--ink); --hbd: var(--broth); }
+.btn-cwm--ghost { --bg: transparent;  --fg: currentColor; --bd: currentColor; --hbg: var(--ink);   --hfg: var(--broth); --hbd: var(--ink); }
+
+.band--cream .btn-cwm--ghost,
+.band--yolk .btn-cwm--ghost {
+  --hbg: var(--broth);
+  --hfg: var(--ink);
+  --hbd: var(--broth);
+}
+
+.btn-cwm--sm {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+}
+
+.btn-cwm i {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+/* ---- Tags ---- */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.75rem;
+  padding: 0.1rem 0.6rem;
+  border: 2px solid currentColor;
+  font: 800 0.7rem/1 var(--font-body);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tag--solid { background: var(--broth); border-color: var(--broth); color: var(--ink); }
+.tag--yolk  { background: var(--yolk);  border-color: var(--broth); color: var(--broth); }
+
+/* ---- Photography: square editorial crop on a colour field ---- */
+.photo {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: var(--ar, 1 / 1);
+  background: var(--surface);
+}
+
+.photo > img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* misregistered print offset — a hard shadow, never a soft glow */
+.photo--offset {
+  box-shadow: 10px 10px 0 var(--yolk);
+}
+
+/* ---- Forms (restyles the Bootstrap class names used across the app) ---- */
+.form-label {
+  display: block;
+  margin: 0 0 0.4rem;
+  font: 800 0.75rem/1.2 var(--font-body);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: inherit;
+}
+
+.form-control,
+.form-select {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.6rem 0.85rem;
+  font: 500 1rem/1.4 var(--font-body);
+  color: var(--broth);
+  background-color: var(--ink);
+  background-image: none;
+  border: 2px solid var(--broth);
+  border-radius: 0;
+  box-shadow: none;
+  appearance: none;
+}
+
+.form-select {
+  padding-right: 2.5rem;
+  background-image: linear-gradient(45deg, transparent 50%, var(--broth) 50%), linear-gradient(135deg, var(--broth) 50%, transparent 50%);
+  background-position: calc(100% - 1.25rem) 55%, calc(100% - 0.9rem) 55%;
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
+  background-repeat: no-repeat;
+}
+
+textarea.form-control {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.form-control::placeholder {
+  color: #6B5A52; /* 5.97:1 on cream */
+  opacity: 1;
+}
+
+.form-control:focus,
+.form-select:focus {
+  color: var(--broth);
+  background-color: var(--ink);
+  border-color: var(--broth);
+  box-shadow: 0 0 0 2px var(--broth);
+  outline: 3px solid var(--yolk);
+  outline-offset: 2px;
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  opacity: 0.6;
+}
+
+/* Invalid state: heavier border + a solid message block (not colour alone). */
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-width: 2px;
+  border-color: var(--broth);
+  background-image: none;
+  box-shadow: inset 6px 0 0 var(--paper);
+  padding-right: 0.85rem;
+}
+
+.invalid-feedback {
+  display: none;
+  width: 100%;
+  margin-top: 0;
+  padding: 0.4rem 0.7rem;
+  background: var(--broth);
+  color: var(--ink);
+  border-left: 6px solid var(--yolk);
+  font: 600 0.875rem/1.35 var(--font-body);
+}
+
+.is-invalid ~ .invalid-feedback,
+.was-validated :invalid ~ .invalid-feedback {
+  display: block;
+}
+
+.form-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0;
+  margin: 0;
+}
+
+.form-check-input {
+  flex: none;
+  width: 1.4rem;
+  height: 1.4rem;
+  margin: 0.1rem 0 0;
+  appearance: auto;
+  accent-color: var(--broth);
+  border-radius: 0;
+}
+
+.form-check-label {
+  font-size: 0.95rem;
+}
+
+/* ---- Alerts: solid blocks with a heavy left edge ---- */
+.alert {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--broth);
+  border-left-width: 8px;
+  border-radius: 0;
+  font-weight: 600;
+  background: var(--ink);
+  color: var(--broth);
+}
+
+.alert-danger  { background: var(--broth); color: var(--ink); border-color: var(--broth); border-left-color: var(--yolk); }
+.alert-success { background: var(--yolk);  color: var(--broth); }
+.alert-info    { background: var(--ink);   color: var(--broth); }
+.alert-warning { background: var(--yolk);  color: var(--broth); }
+
+/* ---- Tables (editorial: solid header rule, hairline rows) ---- */
+.table {
+  width: 100%;
+  margin: 0;
+  color: inherit;
+  border-collapse: collapse;
+  --bs-table-bg: transparent;
+  --bs-table-color: inherit;
+}
+
+.table > :not(caption) > * > * {
+  padding: 0.7rem 0.75rem;
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  vertical-align: middle;
+}
+
+.table > thead > tr > th {
+  font: 800 0.72rem/1.2 var(--font-body);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: left;
+  border-bottom: var(--rule) solid currentColor;
+}
+
+/* ---- Empty / loading / error states ---- */
+.state {
+  padding: clamp(2.5rem, 8vw, 5rem) var(--gutter);
+  text-align: center;
+}
+
+.state__title {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.state__text {
+  max-width: 34rem;
+  margin: 0 auto 1.5rem;
+}
+
+/* the plate loader itself (`.loader`) lives in motion.css */
+@keyframes cwm-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Bootstrap-compatible helper kept for screen-reader-only text */
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}

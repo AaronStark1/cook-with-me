@@ -1,0 +1,716 @@
+/* ==========================================================================
+   COOK WITH ME — motion system
+   Tokens, reveal states, shared keyframes and the global reduced-motion
+   contract. Mirrored for scripted (WAAPI) motion in src/app/motion/tokens.ts.
+
+   Rules of the house:
+     · animate only transform / translate / scale / rotate, opacity, clip-path
+     · hard edges, flat colour — no gradients, glows or blur (hero depth of
+       field is the one exception and lives with the hero)
+     · every hidden state here is added by JS at runtime, so a page without JS,
+       without IntersectionObserver or with reduced motion is simply complete
+   ========================================================================== */
+
+:root {
+  --ease:          cubic-bezier(0.2, 0.7, 0.2, 1);    /* default UI easing */
+  --ease-arrive:   cubic-bezier(0.22, 0.8, 0.3, 1);   /* openings, reveals, rises */
+  --ease-glide:    cubic-bezier(0.65, 0, 0.35, 1);    /* sliding bars / indicators */
+  --ease-out-quad: cubic-bezier(0.5, 1, 0.89, 1);     /* parallax arrival */
+  --ease-wipe:     cubic-bezier(0.65, 0.02, 0.2, 1);  /* fallback when linear() is unsupported */
+
+  --dur-micro: 120ms;
+  --dur-ui: 200ms;
+  --dur-reveal: 700ms;
+  --dur-wipe-hero: 970ms;
+  --dur-wipe-page: 640ms;
+  --dur-wipe-step: 640ms;
+
+  /* field colours — the same values as FIELD_COLORS, not new hues */
+  --paprika: #B4410E;
+  --beet: #9B1B3C;
+  --basil: #2F5A2E;
+
+  /* hard offset under a hovered button: broth on red/cream/yolk, cream on broth */
+  --btn-shadow: var(--broth);
+}
+
+/* The measured coverage curve as a CSS easing (38 sample points; cover() in
+   tokens.ts is the same curve and a unit test keeps the two in agreement). */
+@supports (animation-timing-function: linear(0, 1)) {
+  :root {
+    --ease-wipe: linear(0, 0.003 1.6%, 0.006 3.1%, 0.009 8.3%, 0.012 13.4%, 0.0175 17%, 0.023 20.6%, 0.035 24.2%, 0.047 27.8%, 0.0585 30.9%, 0.07 34%, 0.0875 37.6%, 0.105 41.2%, 0.1187 43.6%, 0.1443 46.1%, 0.158 48.5%, 0.1808 50.5%, 0.2232 52.6%, 0.246 54.6%, 0.2935 55.5%, 0.398 56.5%, 0.5025 57.4%, 0.55 58.3%, 0.593 59.2%, 0.6875 60.1%, 0.782 61.1%, 0.825 62%, 0.8444 64.3%, 0.8806 66.7%, 0.9 69%, 0.92 74%, 0.94 79%, 0.948 82%, 0.956 85%, 0.9655 89%, 0.975 93%, 0.9875 96.5%, 1);
+  }
+}
+
+.band--broth,
+.site-footer {
+  --btn-shadow: var(--ink);
+}
+
+/* Routes are lazy chunks and their data arrives later still, so <main> is briefly empty. Reserving
+   a viewport's height keeps the footer below the fold while that happens: nothing on screen shifts
+   when the page fills in. */
+main {
+  min-height: calc(100svh - var(--header-h));
+}
+
+/* Bootstrap's reboot turns on smooth scrolling for the whole document, which made every route
+   change glide up from the old scroll offset — under a route wipe the new page would be seen
+   scrolling. Route changes land at the top instantly; "Back to top" asks for smooth explicitly. */
+:root {
+  scroll-behavior: auto;
+}
+
+/* ==========================================================================
+   Scroll reveals (appReveal). `.rv` is the armed state, `.is-in` the revealed
+   one. Uses the separate translate / scale properties so an element's own
+   transform is never touched.
+   ========================================================================== */
+.rv {
+  --rv-dur: var(--dur-reveal);
+  --rv-step: 60ms;
+}
+
+.rv--rise:not(.rv--stagger) {
+  opacity: 0;
+  translate: 0 14px;
+  transition: opacity var(--rv-dur) var(--ease-arrive) var(--rv-delay, 0ms), translate var(--rv-dur) var(--ease-arrive) var(--rv-delay, 0ms);
+}
+
+/* Rises from behind its own bottom edge: the clip grows exactly as fast as the
+   element travels, so the mask edge stays put. Negative insets keep display
+   ascenders and offset shadows unclipped once it has landed. */
+.rv--mask:not(.rv--stagger) {
+  clip-path: inset(-0.3em -0.5em 100% -0.5em);
+  translate: 0 100%;
+  transition: clip-path var(--rv-dur) var(--ease-arrive) var(--rv-delay, 0ms), translate var(--rv-dur) var(--ease-arrive) var(--rv-delay, 0ms);
+}
+
+.rv--mask.is-in:not(.rv--stagger) {
+  clip-path: inset(-0.3em -0.5em -0.3em -0.5em);
+}
+
+.rv--wipe {
+  clip-path: inset(-1rem 100% -1rem -1rem);
+  transition: clip-path 650ms var(--ease-wipe) var(--rv-delay, 0ms);
+}
+
+.rv--wipe-down {
+  clip-path: inset(-1rem -1rem 100% -1rem);
+  transition: clip-path 650ms var(--ease-wipe) var(--rv-delay, 0ms);
+}
+
+.rv--wipe.is-in,
+.rv--wipe-down.is-in {
+  clip-path: inset(-1rem -1rem -1rem -1rem);
+}
+
+/* lines draw from the left: any `.rv-rule` inside, and a kicker's leading rule */
+.rv--rule .rv-rule,
+.rv--rule.kicker::before,
+.rv--rule .kicker::before {
+  scale: 0 1;
+  transform-origin: left center;
+  transition: scale var(--rv-dur) var(--ease-arrive) var(--rv-delay, 0ms);
+}
+
+.rv--rule.is-in .rv-rule,
+.rv--rule.is-in.kicker::before,
+.rv--rule.is-in .kicker::before {
+  scale: 1 1;
+}
+
+/* children delay by index (the directive writes --i, capped at 8) */
+.rv--stagger.rv--rise > * {
+  opacity: 0;
+  translate: 0 14px;
+  transition: opacity var(--rv-dur) var(--ease-arrive), translate var(--rv-dur) var(--ease-arrive);
+  transition-delay: calc(var(--rv-delay, 0ms) + var(--i, 0) * var(--rv-step));
+}
+
+.rv--stagger.rv--mask > * {
+  clip-path: inset(-0.3em -0.5em 100% -0.5em);
+  translate: 0 100%;
+  transition: clip-path var(--rv-dur) var(--ease-arrive), translate var(--rv-dur) var(--ease-arrive);
+  transition-delay: calc(var(--rv-delay, 0ms) + var(--i, 0) * var(--rv-step));
+}
+
+.rv--rise.is-in:not(.rv--stagger),
+.rv--stagger.rv--rise.is-in > * {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.rv--mask.is-in:not(.rv--stagger) {
+  translate: 0 0;
+}
+
+.rv--stagger.rv--mask.is-in > * {
+  clip-path: inset(-0.3em -0.5em -0.3em -0.5em);
+  translate: 0 0;
+}
+
+@media print {
+  .rv,
+  .rv > * {
+    opacity: 1 !important;
+    clip-path: none !important;
+    translate: none !important;
+    scale: none !important;
+  }
+}
+
+/* ==========================================================================
+   Plate loader — restyles the existing `.loader` (same class, same size):
+   a cream plate, a yolk centre and a dashed ring that turns.
+   ========================================================================== */
+.loader {
+  position: relative;
+  display: inline-block;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 2px solid var(--broth);
+  border-radius: 50%;
+  background: var(--ink);
+  animation: none;
+}
+
+.loader::before,
+.loader::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+}
+
+.loader::before {
+  inset: 3px;
+  border: 3px dashed var(--broth);
+  animation: cwm-spin 1s linear infinite;
+}
+
+.loader::after {
+  inset: 32%;
+  background: var(--yolk);
+  border: 2px solid var(--broth);
+}
+
+/* an empty plate (no spinner) for empty and error states */
+.loader--still::before {
+  animation: none;
+}
+
+.state--plate .loader {
+  margin-bottom: 1.25rem;
+}
+
+/* the plate rocks once when an empty/error state appears */
+.state--plate .loader,
+.plate-rock {
+  animation: cwm-rock 900ms var(--ease-arrive) 1 both;
+}
+
+@keyframes cwm-rock {
+  0% { rotate: -14deg; }
+  35% { rotate: 9deg; }
+  65% { rotate: -4deg; }
+  100% { rotate: 0deg; }
+}
+
+/* ==========================================================================
+   Skeletons — flat blocks with a flat translucent bar sweeping across.
+   ========================================================================== */
+.skeleton {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: var(--surface);
+  --skeleton-bar: color-mix(in srgb, var(--ink) 20%, transparent);
+}
+
+.band--cream .skeleton {
+  background: color-mix(in srgb, var(--broth) 10%, var(--ink));
+  --skeleton-bar: color-mix(in srgb, var(--broth) 8%, transparent);
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 38%;
+  background: var(--skeleton-bar);
+  transform: translateX(-110%);
+  animation: cwm-sweep 1.5s linear infinite;
+}
+
+.skeleton--photo { aspect-ratio: 1 / 1; }
+.skeleton--line  { height: 1.1rem; }
+.skeleton--short { width: 55%; height: 0.8rem; }
+.skeleton--title { height: clamp(2rem, 4.2vw, 4rem); width: 80%; }
+
+.skeleton-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+@keyframes cwm-sweep {
+  to { transform: translateX(290%); }
+}
+
+/* ==========================================================================
+   Buttons and links — tactile press, arrow nudge, drawn underline.
+   ========================================================================== */
+.btn-cwm {
+  transition:
+    background-color var(--dur-micro) var(--ease),
+    color var(--dur-micro) var(--ease),
+    border-color var(--dur-micro) var(--ease),
+    translate var(--dur-micro) var(--ease),
+    box-shadow var(--dur-micro) var(--ease);
+}
+
+.btn-cwm:hover:not(:disabled, [aria-disabled='true']) {
+  translate: -2px -2px;
+  box-shadow: 4px 4px 0 var(--btn-shadow);
+}
+
+/* keyboard focus gets the same inversion + lift; the focus ring stays as it is */
+.btn-cwm:focus-visible:not(:disabled, [aria-disabled='true']) {
+  color: var(--hfg);
+  background: var(--hbg);
+  border-color: var(--hbd);
+  translate: -2px -2px;
+}
+
+.btn-cwm:active:not(:disabled, [aria-disabled='true']) {
+  translate: 0 0;
+  box-shadow: 0 0 0 var(--btn-shadow);
+}
+
+.btn-cwm i[class*='bi-arrow-'] {
+  transition: translate var(--dur-ui) var(--ease);
+}
+
+.btn-cwm:hover:not(:disabled) .bi-arrow-right,
+.btn-cwm:focus-visible .bi-arrow-right { translate: 4px 0; }
+
+.btn-cwm:hover:not(:disabled) .bi-arrow-left,
+.btn-cwm:focus-visible .bi-arrow-left { translate: -4px 0; }
+
+.btn-cwm:hover:not(:disabled) .bi-arrow-up,
+.btn-cwm:focus-visible .bi-arrow-up { translate: 0 -4px; }
+
+/* Inline text links: the resting underline stays (links must look like links);
+   on hover a hard 4 px line draws in from the left instead of the old
+   thickness jump. The "image" is one flat colour — a line, not a gradient. */
+:where(main, .site-footer) a:not([class]) {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0 4px;
+  transition: background-size 260ms var(--ease-arrive);
+}
+
+:where(main, .site-footer) a:not([class]):hover,
+:where(main, .site-footer) a:not([class]):focus-visible {
+  text-decoration-thickness: 2px;
+  background-size: 100% 4px;
+}
+
+/* ==========================================================================
+   Reduced motion — the global half of the contract (MotionPrefs is the live
+   JS half). Motion goes; information and function stay.
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .rv,
+  .rv > *,
+  .rv .rv-rule,
+  .rv.kicker::before,
+  .rv .kicker::before {
+    opacity: 1 !important;
+    clip-path: none !important;
+    translate: none !important;
+    scale: none !important;
+    transition: none !important;
+  }
+
+  .loader::before,
+  .state--plate .loader,
+  .plate-rock,
+  .skeleton::after {
+    animation: none;
+  }
+
+  .skeleton::after {
+    display: none;
+  }
+
+  .btn-cwm,
+  .btn-cwm i,
+  :where(main, .site-footer) a:not([class]) {
+    transition: none;
+  }
+
+  .btn-cwm:hover:not(:disabled, [aria-disabled='true']),
+  .btn-cwm:focus-visible:not(:disabled, [aria-disabled='true']) {
+    translate: none;
+    box-shadow: none;
+  }
+
+  .btn-cwm:hover i,
+  .btn-cwm:focus-visible i {
+    translate: none !important;
+  }
+}
+
+/* ==========================================================================
+   Idle bob — garnish stickers, foreground props, Assembly Demo tickets.
+   ±0.5cqw and ±3° around the piece's own resting rotation (--r); duration and
+   (negative) delay are set per piece so no two move together.
+   ========================================================================== */
+.bob {
+  animation: cwm-bob var(--bob-dur, 4s) ease-in-out var(--bob-delay, 0s) infinite alternate;
+}
+
+@keyframes cwm-bob {
+  from { translate: 0 -0.5cqw; rotate: calc(var(--r, 0deg) - 3deg); }
+  to { translate: 0 0.5cqw; rotate: calc(var(--r, 0deg) + 3deg); }
+}
+
+/* idle loops stop when their section is off-screen or the tab is hidden */
+.is-idle .bob {
+  animation-play-state: paused;
+}
+
+/* ==========================================================================
+   Opening sequence (once per session; see motion/intro.ts).
+   `intro-pending` hides only the intro targets; `intro-play` runs them in.
+   Rises use the separate `translate` property, so existing transforms survive.
+   ========================================================================== */
+html.intro-pending :is(.intro-rise, .intro-slide, .intro-word) {
+  opacity: 0 !important;
+}
+
+html.intro-play .intro-rise {
+  animation: intro-rise 1000ms var(--ease-arrive) var(--intro-d, 0ms) both;
+}
+
+html.intro-play .intro-slide {
+  animation: intro-slide 900ms var(--ease-arrive) both;
+}
+
+html.intro-play .intro-word {
+  animation: intro-mask 900ms var(--ease-arrive) calc(150ms + var(--w, 0) * 70ms) both;
+}
+
+@keyframes intro-rise {
+  from { opacity: 0; translate: 0 14px; }
+}
+
+/* layers slide in from the right by their own depth factor of the hero's width */
+@keyframes intro-slide {
+  from { translate: calc(var(--intro-f, 0.3) * var(--intro-k, 1) * 100cqw) 0; }
+}
+
+@keyframes intro-mask {
+  from { clip-path: inset(-0.3em -0.3em 100% -0.3em); translate: 0 100%; }
+  to { clip-path: inset(-0.3em -0.3em -0.3em -0.3em); translate: 0 0; }
+}
+
+@media (max-width: 820px) {
+  html.intro-play { --intro-k: 0.6; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bob {
+    animation: none;
+    rotate: var(--r, 0deg);
+  }
+
+  html.intro-pending :is(.intro-rise, .intro-slide, .intro-word) {
+    opacity: 1 !important;
+  }
+
+  html.intro-play :is(.intro-rise, .intro-slide, .intro-word) {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   Route transitions (View Transitions API, via the router).
+   The mode is chosen in motion/route-transition.ts and set on <html> as
+   data-vt="wipe|morph|none" + data-vt-dir="forward|back".
+
+   The page is the `root` snapshot — exactly what is on screen, so a scrolled
+   page never jumps — and the sticky header is lifted out under its own name,
+   which is what keeps it rock-still while everything else (footer included)
+   wipes. Unsupported browsers just swap routes.
+   ========================================================================== */
+@supports (view-transition-name: none) {
+  /* the header is live throughout: no snapshot crossfade, so the nav bar glides for real */
+  ::view-transition-old(site-header) {
+    display: none;
+  }
+
+  ::view-transition-new(site-header) {
+    animation: none;
+  }
+
+  ::view-transition-group(root) {
+    animation: none;
+  }
+
+  /* "none" mode (admin, same-route changes, reduced motion): nothing animates, so the swap is instant */
+  html:not([data-vt])::view-transition-group(*),
+  html:not([data-vt])::view-transition-old(*),
+  html:not([data-vt])::view-transition-new(*) {
+    animation: none !important;
+  }
+
+  ::view-transition-image-pair(root) {
+    isolation: auto;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  /* §4.2: the old page is covered by the measured curve while it drifts 14 % away.
+     Clip and drift share one element, so the clip is pre-compensated: 86 % + 14 % = the full sweep. */
+  html[data-vt]::view-transition-old(root) {
+    z-index: 1;
+    animation: vt-cover var(--dur-wipe-page) var(--ease-wipe) both;
+  }
+
+  /* the new page arrives with parallax 0.15: starts at 50 % of the run, lands at 92 % */
+  html[data-vt]::view-transition-new(root) {
+    animation: vt-arrive calc(var(--dur-wipe-page) * 0.42) var(--ease-out-quad) calc(var(--dur-wipe-page) * 0.5) backwards;
+  }
+
+  html[data-vt][data-vt-dir='back']::view-transition-old(root) {
+    animation-name: vt-cover-back;
+  }
+
+  html[data-vt][data-vt-dir='back']::view-transition-new(root) {
+    animation-name: vt-arrive-back;
+  }
+
+  @keyframes vt-cover {
+    from { clip-path: inset(0 0 0 0); translate: 0 0; }
+    to { clip-path: inset(0 86% 0 0); translate: -14vw 0; }
+  }
+
+  @keyframes vt-cover-back {
+    from { clip-path: inset(0 0 0 0); translate: 0 0; }
+    to { clip-path: inset(0 0 0 86%); translate: 14vw 0; }
+  }
+
+  @keyframes vt-arrive {
+    from { translate: 15vw 0; }
+  }
+
+  @keyframes vt-arrive-back {
+    from { translate: -15vw 0; }
+  }
+
+  /* morph: the clicked tile's photo flies to the detail page's photo while the rest wipes */
+  ::view-transition-group(recipe-photo) {
+    z-index: 2;
+    animation-duration: var(--dur-wipe-page);
+    animation-timing-function: var(--ease-glide);
+  }
+
+  ::view-transition-old(recipe-photo),
+  ::view-transition-new(recipe-photo) {
+    height: 100%;
+    object-fit: cover;
+    animation-duration: var(--dur-wipe-page);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   Header scroll progress: a yolk line growing along the header's bottom rule.
+   Pure CSS where scroll timelines exist; otherwise the navbar writes --scroll-p
+   from the shared ScrollState.
+   ========================================================================== */
+.site-header__progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--rule) * -1);
+  height: var(--rule);
+  background: var(--yolk);
+  transform-origin: left center;
+  scale: var(--scroll-p, 0) 1;
+  pointer-events: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  .site-header__progress {
+    animation: header-progress linear both;
+    animation-timeline: scroll(root block);
+  }
+
+  @keyframes header-progress {
+    from { scale: 0 1; }
+    to { scale: 1 1; }
+  }
+}
+
+
+/* ==========================================================================
+   Editorial photo load: the frame shows its colour field, then that field
+   slides away to the right, uncovering the image from the left.
+   `is-arming` / `is-loaded` come from appImgFallback (a cached image is never
+   armed, so it is simply there). The image itself is never clipped or hidden:
+   a lazy-loading image with no visible area may never be fetched at all.
+   ========================================================================== */
+.photo:has(> img.is-arming)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--surface);
+  pointer-events: none;
+}
+
+.photo:has(> img.is-arming.is-loaded)::after {
+  transform: translateX(101%);
+  transition: transform 600ms var(--ease-wipe);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo:has(> img.is-arming)::after {
+    content: none;
+  }
+}
+
+/* ==========================================================================
+   Count-up (appCountUp): the real value stays in the DOM and keeps reserving
+   its final width; the running number is painted over it.
+   ========================================================================== */
+.count-up {
+  position: relative;
+  display: inline-block;
+}
+
+.count-up.is-counting {
+  color: transparent;
+}
+
+.count-up.is-counting::after {
+  content: attr(data-count);
+  content: attr(data-count) / '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--count-color, currentColor);
+}
+
+/* ==========================================================================
+   Check-off toggle (ingredients, method steps, Cook Mode drawer): a square that
+   fills with yolk while a hard tick draws, and a line that strikes the text
+   left → right. Text keeps full contrast in both states.
+   ========================================================================== */
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.check__box {
+  position: relative;
+  flex: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-top: 0.2rem;
+  border: 2px solid var(--yolk);
+  background: transparent;
+  transition: background-color var(--dur-micro) var(--ease);
+}
+
+.check__box svg {
+  position: absolute;
+  inset: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% + 4px);
+  fill: none;
+  stroke: var(--broth);
+  stroke-width: 3.2;
+  stroke-linecap: square;
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  transition: stroke-dashoffset 220ms var(--ease) 60ms;
+}
+
+.check[aria-pressed='true'] .check__box {
+  background: var(--yolk);
+}
+
+.check[aria-pressed='true'] .check__box svg {
+  stroke-dashoffset: 0;
+}
+
+.check__text {
+  background: linear-gradient(currentColor, currentColor) 0 55% / 0 3px no-repeat;
+  transition: background-size 260ms var(--ease-arrive);
+}
+
+.check[aria-pressed='true'] .check__text {
+  background-size: 100% 3px;
+}
+
+.check:hover .check__box {
+  background: color-mix(in srgb, var(--yolk) 35%, transparent);
+}
+
+.check[aria-pressed='true']:hover .check__box {
+  background: var(--yolk);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .check__box,
+  .check__box svg,
+  .check__text {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
+   Cursor tag (appCursorTag): a square yolk tag that follows the pointer over
+   the hero's focal dish. Decorative; created only on fine-pointer devices.
+   ========================================================================== */
+.cursor-tag {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 300;
+  padding: 0.5rem 0.7rem 0.4rem;
+  font: 800 0.72rem/1 var(--font-body);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--broth);
+  background: var(--yolk);
+  border: 2px solid var(--broth);
+  box-shadow: 3px 3px 0 var(--broth);
+  pointer-events: none;
+}

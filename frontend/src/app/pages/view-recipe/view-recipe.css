@@ -1,0 +1,372 @@
+:host {
+  display: block;
+}
+
+.article-state {
+  min-height: 60vh;
+  display: grid;
+  place-items: center;
+}
+
+/* ---- Feature head (paper) ---- */
+.feature {
+  padding-top: clamp(1.25rem, 3vw, 2rem);
+  /* the platter ring behind the photo may reach past the gutter; clip (not hidden) keeps sticky working */
+  overflow-x: clip;
+}
+
+.feature__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  margin-bottom: clamp(1rem, 3vw, 2rem);
+  text-decoration: none;
+}
+
+.feature__back:hover {
+  text-decoration: underline;
+}
+
+.feature__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .feature__grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  }
+}
+
+.feature__title {
+  margin: 0 0 clamp(1.5rem, 3vw, 2.25rem);
+  font-size: clamp(2rem, 4.2vw, 4rem);
+  line-height: 1;
+  overflow-wrap: break-word;
+}
+
+/* ---- Key facts: oversized numerals separated by solid rules ---- */
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.25rem, 1fr));
+  margin: 0 0 clamp(1.5rem, 3vw, 2rem);
+  padding: 0;
+  border-top: var(--rule) solid var(--ink);
+  border-bottom: var(--rule) solid var(--ink);
+}
+
+.fact {
+  min-width: 0;
+  margin: 0;
+  padding: 0.9rem 1rem 0.8rem;
+  border-left: 1px solid color-mix(in srgb, var(--ink) 45%, transparent);
+}
+
+.fact:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.fact dt {
+  margin: 0 0 0.45rem;
+  color: var(--muted);
+}
+
+.fact dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.4rem;
+  margin: 0;
+}
+
+.fact .numeral {
+  font-size: clamp(2rem, 3.2vw, 2.75rem);
+}
+
+.fact__unit {
+  line-height: 1.5;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.fact__word {
+  font-size: clamp(1.15rem, 2.2vw, 1.6rem);
+  line-height: 1.1;
+}
+
+
+.feature__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.feature__actions .btn-cwm {
+  position: relative;
+  flex: 1 1 11rem;
+}
+
+.feature__actions .feature__cook {
+  flex-basis: 100%;
+  min-height: 56px;
+  font-size: 0.9rem;
+}
+
+/* download in progress: a flat bar sweeping across the button (a translating block, not a gradient) */
+.feature__download {
+  overflow: hidden;
+}
+
+.feature__download.is-busy::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 34%;
+  background: color-mix(in srgb, var(--broth) 16%, transparent);
+  transform: translateX(-110%);
+  animation: cwm-sweep 1.1s linear infinite;
+}
+
+/* loading skeleton of the recipe head */
+.feature__grid--skeleton > div {
+  display: grid;
+  gap: 1.25rem;
+  align-content: start;
+}
+
+.skeleton--facts {
+  height: 6.5rem;
+}
+
+.feature__hint {
+  margin: 1rem 0 0;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+}
+
+.feature .alert {
+  margin: 1rem 0 0;
+}
+
+.feature__photo .photo {
+  --ar: 1 / 1;
+}
+
+/* a dashed platter ring peeks out behind the photo and turns as the page scrolls — an echo of the hero */
+.feature__photo {
+  position: relative;
+  isolation: isolate;
+}
+
+.feature__photo::before {
+  content: '';
+  position: absolute;
+  right: -7%;
+  top: -9%;
+  z-index: -1;
+  width: 62%;
+  aspect-ratio: 1;
+  border: 5px dashed var(--yolk);
+  border-radius: 50%;
+}
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .feature__photo::before {
+      animation: ring-turn linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+@keyframes ring-turn {
+  to { rotate: 200deg; }
+}
+
+@media (min-width: 992px) {
+  .feature__photo {
+    position: sticky;
+    top: calc(var(--header-h) + 1.5rem);
+    padding: 0 10px 10px 0; /* room for the hard offset shadow */
+  }
+}
+
+@media (max-width: 991.98px) {
+  .feature__photo {
+    padding: 0 10px 10px 0;
+  }
+}
+
+/* ---- Ingredients + method (cream) ---- */
+.method__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+
+@media (min-width: 992px) {
+  .method__grid {
+    grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.6fr);
+  }
+}
+
+.ingredients {
+  padding: clamp(1.25rem, 3vw, 2rem);
+  background: var(--broth);
+  color: var(--ink);
+  border-top: 8px solid var(--yolk);
+}
+
+@media (min-width: 992px) {
+  .ingredients {
+    position: sticky;
+    top: calc(var(--header-h) + 1.5rem);
+  }
+}
+
+.ingredients__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.ingredients h2 {
+  font-size: clamp(1.4rem, 2.1vw, 1.9rem);
+  overflow-wrap: anywhere;
+}
+
+.ingredients__reset {
+  min-height: 44px;
+  padding: 0 0.25rem;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.ingredients ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ingredients li {
+  font-weight: 600;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
+}
+
+.steps h2 {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: var(--rule) solid var(--broth);
+}
+
+/* a broth rail runs down the method and fills with yolk as far as the reader has got */
+.steps ol {
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 1.5rem;
+  list-style: none;
+}
+
+.steps ol::before,
+.steps ol::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: var(--broth);
+}
+
+.steps ol::after {
+  background: var(--yolk);
+  border: 1px solid var(--broth);
+  transform: scaleY(var(--rail, 0));
+  transform-origin: top;
+  transition: transform 520ms var(--ease-arrive);
+}
+
+.steps li {
+  position: relative;
+  display: grid;
+  grid-template-columns: clamp(3.75rem, 9vw, 6rem) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--broth) 30%, transparent);
+}
+
+/* the numeral is the "done" toggle (44px target) */
+.steps__n {
+  align-self: start;
+  justify-self: start;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.5rem 0.5rem 0.3rem;
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  color: var(--paper); /* red numerals on cream: 5.07:1, large display text */
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background-color var(--dur-ui) var(--ease), color var(--dur-ui) var(--ease);
+}
+
+/* current step: the numeral sits on a yolk block (broth text, 12:1) */
+.steps li.is-current .steps__n {
+  color: var(--broth);
+  background: var(--yolk);
+}
+
+/* done: broth block, yolk numeral, and a struck numeral — text stays at full contrast */
+.steps__n[aria-pressed='true'] {
+  color: var(--yolk);
+  background: var(--broth);
+  text-decoration: line-through;
+  text-decoration-thickness: 4px;
+}
+
+.steps p {
+  margin: 0.3rem 0 0;
+  max-width: 44rem;
+  font-size: clamp(1.05rem, 1.5vw, 1.2rem);
+  line-height: 1.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .steps ol::after,
+  .steps__n {
+    transition: none;
+  }
+
+  .feature__download.is-busy::after {
+    animation: none;
+    transform: none;
+    width: 100%;
+  }
+}
+
+/* ---- Related ---- */
+.related__title {
+  margin-bottom: clamp(1.75rem, 4vw, 3rem);
+}
+
+.related__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(14rem, 100%), 1fr));
+  gap: clamp(1.75rem, 3vw, 2.5rem) clamp(1rem, 2vw, 1.75rem);
+  margin: 0;
+  padding: 0 0.6rem 0.6rem 0;
+  list-style: none;
+}

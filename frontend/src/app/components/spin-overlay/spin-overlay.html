@@ -1,0 +1,62 @@
+<dialog #dialog class="spin" aria-labelledby="spin-title" (close)="onClose()" (click)="onBackdrop($event)">
+  <div class="spin__panel">
+
+    <header class="spin__head">
+      <h2 id="spin-title" class="display-sm">Surprise me</h2>
+      <button type="button" class="spin__x" (click)="close()" aria-label="Close">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    @if (phase() === 'spin') {
+
+      <!-- the wheel is decorative; the result is announced and shown as text below -->
+      <div class="spin__stage" aria-hidden="true">
+        <span class="spin__marker"></span>
+        <div class="spin__disc">
+          <span class="spin__rule"></span>
+          <div #ring class="spin__ring">
+            @for (recipe of wheel(); track recipe._id; let i = $index) {
+              <span class="spin__dish" [style.--a]="(i * 360) / wheel().length + 'deg'">
+                <img appImgFallback [src]="recipe.image || plate" alt="" width="160" height="160" decoding="async" />
+              </span>
+            }
+          </div>
+          <span class="spin__hub"></span>
+        </div>
+      </div>
+      <p class="label spin__hint">Spinning the platter…</p>
+
+    } @else if (winner(); as recipe) {
+
+      <div class="spin__result">
+        <div #photo class="photo photo--offset spin__photo">
+          <img appImgFallback [src]="recipe.image || plate" [alt]="recipe.name ?? 'Recipe photo'" decoding="async" />
+        </div>
+        <div class="spin__copy">
+          <p class="kicker">Tonight, cook</p>
+          <p class="spin__name display display-md">{{ recipe.name }}</p>
+          @if (meta().length) {
+            <ul class="spin__meta" aria-label="Recipe details">
+              @for (item of meta(); track item) {
+                <li class="tag">{{ item }}</li>
+              }
+            </ul>
+          }
+          <div class="spin__actions">
+            <a class="btn-cwm" [routerLink]="['/view-recipe', recipe._id]" [state]="{ recipe }" (click)="cook(photo)">
+              Cook this <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
+            @if (pool().length > 1) {
+              <button type="button" class="btn-cwm btn-cwm--ghost" (click)="spin()">Spin again</button>
+            }
+            <button type="button" class="btn-cwm btn-cwm--ghost" (click)="close()">Close</button>
+          </div>
+        </div>
+      </div>
+
+    }
+
+    <p class="visually-hidden" aria-live="polite" aria-atomic="true">{{ announcement() }}</p>
+  </div>
+</dialog>
