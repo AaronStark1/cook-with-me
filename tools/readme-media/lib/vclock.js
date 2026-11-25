@@ -75,10 +75,14 @@ export const VCLOCK_SCRIPT = String.raw`
 
   // Every animation (CSS, WAAPI, view transition) is pinned to the virtual time it first appeared at.
   const born = new WeakMap();
+  const pinned = new WeakSet(); // animations this clock paused (vs. ones the page paused itself)
   function pinAnimations() {
     for (const a of document.getAnimations()) {
       // scroll-driven animations already follow the (scripted) scroll position
       if (a.timeline && typeof DocumentTimeline !== "undefined" && !(a.timeline instanceof DocumentTimeline)) continue;
+      // An animation the page paused is being scrubbed by the page (e.g. the Assembly Demo's
+      // AssemblyTimeline sets currentTime from scroll); leave its currentTime alone.
+      if (a.playState === "paused" && !pinned.has(a)) continue;
       let start = born.get(a);
       if (start === undefined) {
         // A WAAPI animation created with a negative delay or a seek keeps its offset.
@@ -86,7 +90,10 @@ export const VCLOCK_SCRIPT = String.raw`
         born.set(a, start);
       }
       if (a.playState === "finished") continue;
-      if (a.playState !== "paused") a.pause();
+      if (a.playState !== "paused") {
+        a.pause();
+        pinned.add(a);
+      }
       const t = now - start;
       const timing = a.effect && a.effect.getComputedTiming ? a.effect.getComputedTiming() : null;
       if (timing && t >= timing.endTime && timing.endTime !== Infinity) {
