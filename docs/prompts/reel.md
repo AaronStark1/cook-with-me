@@ -4,7 +4,13 @@ You are a senior motion designer and a pipeline engineer working in the **cook-w
 
 The reel must be **filmed from the running Angular app**: real UI, real motion, real recipe data. Nothing in it may be mocked up as UI. Animated graphics drawn by the reel itself (title, transitions, cursor, captions, end card) must be plainly reel graphics, never fake app screens.
 
-Work in the phases in §12. Do not commit or push unless asked. **Do not change any app code** (`frontend/src`, `backend/`). If something looks impossible without an app change, stop and report it rather than adding a hook.
+**This is a one-shot run.** The user starts it and expects the finished reel at the end, with no check-ins. Never stop to ask for confirmation, wait for approval between steps, or end with a plan instead of outputs.
+- Work through §12 in order, verifying each step yourself.
+- When a check fails, fix it and re-check. If it still can't be made to work, take the fallback named in this brief and carry on.
+- If there is no named fallback, choose the simplest honest alternative that keeps the brand rules, and record it in the final report.
+- Stop early only for something outside your control, such as the API or app not starting. Even then, finish everything that doesn't depend on it.
+
+Do not commit or push. **Do not change any app code** (`frontend/src`, `backend/`). If a shot seems to need an app change, work around it in `tools/showreel/` (film it differently, or cut the moment) and note it in the final report. Never add a hook to the app.
 
 ---
 
@@ -230,7 +236,7 @@ function pinAnimations(dt) {
 
 Keep the repo clock's epoch, and keep any `cwm.cook.v1` `t` you seed within 14 days of it. The step must also support SpecShield's 180 fps subframes, whereas the README tool steps at 20 fps. Keep `settleImages()`.
 
-**Prove the clock before filming anything.** Run a smoke script that films 3 s of each case and prints a `--sheet`:
+**Prove the clock before filming the real shots.** This is an internal gate, not a stopping point. Run a smoke script that films 3 s of each case and prints a `--sheet`, then view the sheets yourself. Fix and re-run until every case passes. If a case still fails after a real attempt, use its fallback (listed under the cases) and continue.
 - (a) a hero Next: the old colour panel is gone afterwards;
 - (b) the Assembly Demo scrubbed to 4,600 ms: the photo is mid-iris, not the plate fallback;
 - (c) a Cook Mode Next: only one step is left in the DOM afterwards;
@@ -238,6 +244,13 @@ Keep the repo clock's epoch, and keep any `cwm.cook.v1` `t` you seed within 14 d
 - (e) a tile → detail morph completes and the view-transition pseudo-elements are gone.
 
 For (e), `docs/readme/recipe.webp` already films this morph under the repo's clock, so it probably works. If it is unreliable at 180 fps subframes, film S and D as separate shots and use the plate iris (§7.2) for that cut instead.
+
+Fallbacks for the other cases:
+- (a), (c): if a leaving layer won't clear, call `finish()` on CSS transitions too (see fix 2).
+- (b): if the iris still shows the plate, pre-decode the photo in `prepare` and re-take.
+- (d): if the seeded `Math.random` can't steer the wheel, film takes until one lands on an Italian dish. Use that dish for S → D → C, and change the dish names in the timeline to match.
+
+**Capture fallback if virtual time can't drive a case at 180 fps:** capture at 60 fps (one still per frame) and drop the motion-blur averaging for that shot. A clean shot without blur beats a broken one with it.
 
 **Image and font readiness is real time, not virtual.**
 - The intro waits up to 600 ms for fonts and the first dish, and the Assembly iris waits up to 600 ms for `img.decode()`. Under virtual time those waits can expire before the images arrive.
@@ -486,21 +499,29 @@ Review modes (use them constantly):
 
 ---
 
-## 12. Phases
-0. **Spike (do this first and stop if it fails).** Run the vclock adaptation and the five smoke cases in §5.1, plus fixtures with an authorised mocked POST. Report what works before filming.
-1. **Fixtures:** `npm run fixtures`, the image cache, and the session and storage seeding.
-2. **16:9 shots:** H, A, I, S+D+C (or S | D+C if the morph fails), C2, K, E. Review each with `--sheet`.
-3. **Compositor:** segments, cameras, the four transition modes, overlays (title, cursor, captions, end card). Review with `--beats`, plus `--range` around every cut.
-4. **Score:** `npm run audio`, then listen to it against a quick low-res mux.
-5. **Master and web encodes,** with checks 1–3 and 8–10 on 16:9.
-6. **Vertical:** shots, layout, encode and cover, then every check on 9:16.
-7. **README note and final report.**
+## 12. Order of work (one continuous run, no stops)
+Do these in order, in a single run. Each step ends when its own checks pass, not when the user replies.
+
+**Priority:** finish the 16:9 master and web cut completely, with checks and README note, before starting the vertical cut. A run that ends early should still leave a finished, verified 16:9 reel.
+
+1. **Clock and data spike:** the vclock adaptation, the five smoke cases in §5.1, and fixtures with an authorised mocked POST. Fix until they pass, or take the §5.1 fallbacks.
+2. **Fixtures:** `npm run fixtures`, the image cache, and the session and storage seeding.
+3. **16:9 shots:** H, A, I, S+D+C (or S | D+C if the morph fails), C2, K, E. View each `--sheet` and re-take any shot with dead frames, half-loaded images or an unscripted hero advance.
+4. **Compositor:** segments, cameras, the four transition modes and the overlays (title, cursor, captions, end card). View the `--beats` sheet and a `--range` sheet around every cut, and fix what's wrong.
+5. **Score:** `npm run audio`. You can't listen, so verify with numbers instead:
+   - render a quick low-res mux;
+   - check sync with check 9 (events against `meta.json` and the cut times);
+   - check loudness with check 10 (`ebur128`).
+6. **Master and web encodes,** with checks 1–3 and 8–10 on 16:9. Update the README note now, so the 16:9 deliverable is complete.
+7. **Vertical:** shots, layout, encode and cover, then every check on 9:16.
+8. **Final checks and report:** checks 4–7, 11 and 12 across everything, then the §13 report.
 
 ## 13. Final report
 Report:
 - what shipped, with the paths and sizes of every output;
 - the final timeline as built, with any deviations from §6 and why;
 - whether the tile → detail morph was filmed in-app or replaced, and why;
+- every fallback you took (which check failed, what you tried, and what you shipped instead), plus anything from §6 that was cut;
 - the vclock changes and anything that still needed a workaround;
 - the measured numbers: durations, bitrates, sizes, LUFS, true peak, render and capture times;
 - what you could not verify;
