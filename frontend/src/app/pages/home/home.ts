@@ -5,6 +5,10 @@ import { AuthService } from '../../services/auth';
 import { RecipeModel } from '../../models/recipe-model';
 import { HeroCarousel, MAX_FEATURED } from '../../components/hero-carousel/hero-carousel';
 import { RecipeTile } from '../../components/recipe-tile/recipe-tile';
+import { Reveal } from '../../motion/reveal';
+import { Marquee } from '../../components/marquee/marquee';
+import { AssemblyDemo } from '../../components/assembly-demo/assembly-demo';
+import { pickShowcase } from '../../components/assembly-demo/showcase.config';
 
 /** How many recipes the "Cook this week" band shows. */
 const TILE_COUNT = 4;
@@ -12,7 +16,7 @@ const TILE_COUNT = 4;
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterLink, HeroCarousel, RecipeTile],
+  imports: [RouterLink, HeroCarousel, RecipeTile, Reveal, AssemblyDemo, Marquee],
   templateUrl: './home.html',
   styleUrl: './home.css'
 })
@@ -24,6 +28,10 @@ export class Home implements OnInit {
   featured: RecipeModel[] = [];
   /** Recipes for the editorial band below the hero. */
   tiles: RecipeModel[] = [];
+  /** The fixed featured recipes the Assembly Demo builds on screen (empty = no demo at all). */
+  showcase: RecipeModel[] = [];
+  /** Placeholder tiles shown while the recipes load. */
+  protected readonly skeletons = Array.from({ length: TILE_COUNT }, (_, i) => i);
   recipesLoading = true;
   recipesError = false;
 
@@ -45,6 +53,7 @@ export class Home implements OnInit {
         this.featured = recipes.filter((r) => !!r.image).slice(0, MAX_FEATURED);
         const rest = recipes.slice(MAX_FEATURED);
         this.tiles = (rest.length ? rest : recipes).slice(0, TILE_COUNT);
+        this.showcase = pickShowcase(recipes, this.featured.map((r) => r._id!));
         this.recipesLoading = false;
       },
       error: () => {

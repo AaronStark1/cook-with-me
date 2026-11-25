@@ -1,15 +1,25 @@
-/* Sticky header: a strong cream rule under a flat tomato bar. */
+/* Sticky header: a strong cream rule under a flat tomato bar.
+   Its height never changes (--header-h drives sticky offsets across the app). */
 :host {
   display: block;
   position: sticky;
   top: 0;
   z-index: 50;
+  /* the header stays rock-still while pages wipe underneath it */
+  view-transition-name: site-header;
 }
 
 .site-header {
+  position: relative;
   background: var(--paper);
   color: var(--ink);
   border-bottom: var(--rule) solid var(--ink);
+  transition: box-shadow 160ms var(--ease);
+}
+
+/* scrolled: a hard broth drop, no blur */
+:host(.is-stuck) .site-header {
+  box-shadow: 0 6px 0 var(--broth);
 }
 
 .site-header__bar {
@@ -20,6 +30,8 @@
   gap: 1.5rem;
   min-height: var(--header-h);
 }
+
+/* (the scroll-progress line, .site-header__progress, is styled in motion.css) */
 
 /* ---- Wordmark: COOK + a yolk block saying WITH ME ---- */
 .wordmark {
@@ -43,6 +55,13 @@
   padding: 0.28em 0.4em 0.2em;
   background: var(--yolk);
   color: var(--broth);
+  transition: translate 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+
+.wordmark:hover .wordmark__b,
+.wordmark:focus-visible .wordmark__b {
+  translate: 4px 0;
+  box-shadow: -4px 4px 0 var(--broth);
 }
 
 /* ---- Primary nav (desktop) ---- */
@@ -55,6 +74,7 @@
 }
 
 .site-nav__list {
+  position: relative;
   display: flex;
   gap: clamp(1rem, 2.4vw, 2.25rem);
   margin: 0 auto;
@@ -73,7 +93,7 @@
   text-decoration: none;
 }
 
-/* active route: a solid yolk bar sitting on the header rule */
+/* Fallback (bar not measured yet / no JS): each link draws its own bar. */
 .site-nav__list a::after {
   content: '';
   position: absolute;
@@ -90,6 +110,31 @@
 .site-nav__list a:hover::after,
 .site-nav__list a.is-active::after {
   transform: scaleX(1);
+}
+
+@media (min-width: 992px) {
+  /* ONE yolk bar sitting on the header rule: it glides to the active link, and previews
+     the link under the pointer. Placed without animation first; `.is-ready` enables the glide. */
+  .site-nav__list.has-bar a::after {
+    content: none;
+  }
+
+  .site-nav__list.has-bar::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: calc(var(--rule) * -1);
+    width: 1px;
+    height: 6px;
+    background: var(--yolk);
+    transform: translateX(var(--bar-x, 0px)) scaleX(var(--bar-w, 0));
+    transform-origin: left center;
+    pointer-events: none;
+  }
+
+  .site-nav__list.is-ready::after {
+    transition: transform 0.6s var(--ease-glide);
+  }
 }
 
 /* ---- Account ---- */
@@ -117,6 +162,7 @@
   background: transparent;
   border: 2px solid var(--ink);
   cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease), color var(--dur-micro) var(--ease);
 }
 
 .account__toggle:hover,
@@ -140,8 +186,9 @@
   transform: rotate(180deg);
 }
 
+/* The menu wipes open top → bottom. `visibility` keeps it out of the tab order and the
+   accessibility tree while closed, exactly as `display: none` did. */
 .account__menu {
-  display: none;
   position: absolute;
   top: calc(100% + 0.75rem);
   right: 0;
@@ -150,10 +197,15 @@
   background: var(--broth);
   color: var(--ink);
   border: var(--rule) solid var(--ink);
+  visibility: hidden;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path var(--dur-ui) var(--ease), visibility 0s linear var(--dur-ui);
 }
 
 .account__menu.is-open {
-  display: block;
+  visibility: visible;
+  clip-path: inset(0 0 0 0);
+  transition-delay: 0s;
 }
 
 .account__who {
@@ -193,6 +245,30 @@
   color: var(--broth);
 }
 
+@media (min-width: 992px) {
+  /* the "signed in as" caption is only needed in the stacked mobile panel */
+  .account__who {
+    display: none;
+  }
+
+  /* items follow the wipe down, 30 ms apart */
+  .account__menu li {
+    opacity: 0;
+    translate: 0 -6px;
+    transition: opacity var(--dur-ui) var(--ease), translate var(--dur-ui) var(--ease);
+  }
+
+  .account__menu.is-open li {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  .account__menu.is-open li:nth-child(1) { transition-delay: 40ms; }
+  .account__menu.is-open li:nth-child(2) { transition-delay: 70ms; }
+  .account__menu.is-open li:nth-child(3) { transition-delay: 100ms; }
+  .account__menu.is-open li:nth-child(4) { transition-delay: 130ms; }
+}
+
 /* ---- Mobile / tablet: a disclosure panel under the header ---- */
 .site-header__toggle {
   display: none;
@@ -223,17 +299,35 @@
     color: var(--broth);
   }
 
+  /* three hard bars that fold into an ✕ */
   .site-header__toggle-bars {
+    position: relative;
     width: 1.1rem;
     height: 0.8rem;
-    background:
-      linear-gradient(currentColor, currentColor) top / 100% 2px no-repeat,
-      linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat,
-      linear-gradient(currentColor, currentColor) bottom / 100% 2px no-repeat;
   }
 
+  .site-header__toggle-bars::before,
+  .site-header__toggle-bars::after,
+  .site-header__toggle-bars > span {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(50% - 1px);
+    height: 2px;
+    background: currentColor;
+    transition: transform var(--dur-ui) var(--ease), opacity var(--dur-micro) linear;
+  }
+
+  .site-header__toggle-bars::before { transform: translateY(-0.34rem); }
+  .site-header__toggle-bars::after { transform: translateY(0.34rem); }
+
+  [aria-expanded='true'] > .site-header__toggle-bars > span { transform: scaleX(0); opacity: 0; }
+  [aria-expanded='true'] > .site-header__toggle-bars::before { transform: rotate(45deg); }
+  [aria-expanded='true'] > .site-header__toggle-bars::after { transform: rotate(-45deg); }
+
+  /* the panel wipes down from the header */
   .site-nav {
-    display: none;
     position: absolute;
     top: 100%;
     left: 0;
@@ -248,16 +342,25 @@
     border-bottom: var(--rule) solid var(--yolk);
     max-height: calc(100dvh - var(--header-h));
     overflow-y: auto;
+    visibility: hidden;
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path 360ms var(--ease-arrive), visibility 0s linear 360ms;
   }
 
   .site-nav.is-open {
-    display: flex;
+    visibility: visible;
+    clip-path: inset(0 0 0 0);
+    transition-delay: 0s;
   }
 
   .site-nav__list {
     flex-direction: column;
     gap: 0;
     margin: 0;
+  }
+
+  .site-nav__list li {
+    overflow: clip;
   }
 
   .site-nav__list li + li {
@@ -273,7 +376,19 @@
     font-size: 1.4rem;
     font-weight: 400;
     letter-spacing: 0;
+    /* links rise from behind their row's bottom edge, 45 ms apart */
+    translate: 0 105%;
+    transition: translate 520ms var(--ease-arrive);
   }
+
+  .site-nav.is-open .site-nav__list a {
+    translate: 0 0;
+  }
+
+  .site-nav.is-open li:nth-child(1) a { transition-delay: 60ms; }
+  .site-nav.is-open li:nth-child(2) a { transition-delay: 105ms; }
+  .site-nav.is-open li:nth-child(3) a { transition-delay: 150ms; }
+  .site-nav.is-open li:nth-child(4) a { transition-delay: 195ms; }
 
   .site-nav__list a::after {
     left: 0;
@@ -310,11 +425,13 @@
   }
 
   .account__menu {
-    display: block;
     position: static;
     min-width: 0;
     background: transparent;
     border: 0;
+    visibility: inherit;
+    clip-path: none;
+    transition: none;
   }
 
   .account__who {
@@ -334,16 +451,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .site-nav__list a::after,
-  .account__chevron {
-    transition: none;
+  .site-header,
+  .site-header *,
+  .site-header *::before,
+  .site-header *::after {
+    transition: none !important;
   }
-}
 
-@media (min-width: 992px) {
-  /* the "signed in as" caption is only needed in the stacked mobile panel */
-  .account__who {
-    display: none;
+  .wordmark:hover .wordmark__b,
+  .wordmark:focus-visible .wordmark__b {
+    translate: none;
   }
 }
 

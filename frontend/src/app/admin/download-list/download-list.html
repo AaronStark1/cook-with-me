@@ -35,7 +35,7 @@
           </tr>
         </thead>
 
-        <tbody>
+        <tbody appRowsIn>
           @for (item of downloadList; track item.recipeId; let i = $index) {
             <tr>
               <td class="num">{{ i + 1 }}</td>

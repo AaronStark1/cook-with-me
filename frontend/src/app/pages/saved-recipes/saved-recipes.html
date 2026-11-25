@@ -8,8 +8,10 @@
       </div>
 
       @if (!loading && savedRecipes.length) {
+        <!-- the odometer's label is the real text; the visible word beside the digits is decoration -->
         <p class="tag tag--yolk saved__count">
-          {{ savedRecipes.length }} saved
+          <app-odometer [value]="savedRecipes.length" [label]="savedRecipes.length + ' saved'" />
+          <span aria-hidden="true">saved</span>
         </p>
       }
     </header>
@@ -36,6 +38,7 @@
     } @else if (!savedRecipes.length) {
 
       <div class="state saved__empty">
+        <span class="saved__plate plate-rock" aria-hidden="true"></span>
         <p class="state__title">Nothing saved yet</p>
         <p class="state__text">You haven't saved any recipes yet.</p>
         <a routerLink="/all-recipes" class="btn-cwm">Browse recipes</a>
@@ -43,7 +46,7 @@
 
     } @else {
 
-      <ul class="saved__grid">
+      <ul class="saved__grid" appFlip>
         @for (recipe of savedRecipes; track recipe._id; let i = $index) {
           <li class="tile">
 

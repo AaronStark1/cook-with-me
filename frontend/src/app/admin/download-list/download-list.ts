@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { Apiservice } from '../../services/apiservice';
+import { RowsIn } from '../row-motion';
 
 @Component({
   selector: 'app-download-list',
   standalone: true,
-  imports: [],
+  imports: [RowsIn],
   templateUrl: './download-list.html',
   styleUrl: './download-list.css'
 })

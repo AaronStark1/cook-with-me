@@ -73,4 +73,42 @@ describe('Contact', () => {
     expect(el.querySelectorAll('.is-invalid').length).toBe(3);
     http.expectNone(`${environment.apiUrl}/api/addTestimony`);
   });
+
+  it('keeps the success message in text and adds the decorative "Sent" stamp to it', async () => {
+    signIn();
+    await fixture.whenStable();
+    const http = TestBed.inject(HttpTestingController);
+    expect(el.querySelector('app-stamp')).toBeNull();
+
+    component.testimonyData = { message: 'Great recipes', profession: 'Home cook', agree: true };
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (el.querySelector('button[type=submit]') as HTMLButtonElement).click();
+    http.expectOne(`${environment.apiUrl}/api/addTestimony`).flush({});
+    fixture.detectChanges();
+
+    const alert = el.querySelector('.alert-success') as HTMLElement;
+    expect(alert.getAttribute('role')).toBe('status');
+    expect(alert.textContent).toContain('Thank you! Your testimony was submitted and is awaiting approval.');
+    const stamp = alert.querySelector('app-stamp') as HTMLElement;
+    expect(stamp.textContent).toContain('Sent');
+    expect(stamp.getAttribute('aria-hidden')).toBe('true');
+    http.verify();
+  });
+
+  it('shows no stamp when the testimony could not be sent', async () => {
+    signIn();
+    await fixture.whenStable();
+    const http = TestBed.inject(HttpTestingController);
+
+    component.testimonyData = { message: 'Great recipes', profession: 'Home cook', agree: true };
+    fixture.detectChanges();
+    await fixture.whenStable();
+    (el.querySelector('button[type=submit]') as HTMLButtonElement).click();
+    http.expectOne(`${environment.apiUrl}/api/addTestimony`).flush({ message: 'Nope' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+
+    expect(el.querySelector('.alert-danger')?.textContent).toContain('Nope');
+    expect(el.querySelector('app-stamp')).toBeNull();
+  });
 });

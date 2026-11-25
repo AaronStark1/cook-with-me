@@ -23,10 +23,16 @@
   margin: 0;
 }
 
+/* admin reveals are one UI beat (the stagger step stays at the default 60ms) */
+.stats.rv {
+  --rv-dur: var(--dur-ui);
+}
+
 .stat__value {
   font-family: var(--font-display);
   font-size: clamp(3.25rem, 6vw, 5rem);
   line-height: 0.85;
+  --count-color: var(--fg); /* the running count-up numeral follows the block (and its hover) */
 }
 
 .stat__more {

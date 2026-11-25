@@ -93,6 +93,78 @@ describe('AllRecipes', () => {
     expect(live.textContent).toContain('Thai');
   });
 
+  it('the head count follows the filters, with the real text as its accessible name', () => {
+    load(DATA);
+    const count = () => el().querySelector('.index-head__count app-odometer')!;
+    expect(count().textContent!.trim()).toBe('4 recipes');
+    chip('Thai', 'filter-cuisine').click();
+    fixture.detectChanges();
+    expect(count().textContent!.trim()).toBe('1 recipe');
+    expect(count().querySelector('.odo')!.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('marks the search text inside matching titles', () => {
+    load(DATA);
+    fixture.componentInstance.searchKey = 'dish';
+    fixture.detectChanges();
+    const marks = Array.from(el().querySelectorAll('.tile__title mark')).map((m) => m.textContent);
+    expect(marks).toEqual(['Dish', 'Dish', 'Dish', 'Dish']);
+    expect(titles()).toEqual(['Dish 1', 'Dish 2', 'Dish 3', 'Dish 4']); // the title text itself is unchanged
+  });
+
+  it('"/" focuses the search box, but not while the user is typing in a field', () => {
+    load(DATA);
+    document.body.appendChild(el());
+    const box = el().querySelector('#recipe-search') as HTMLInputElement;
+    const slash = (target: EventTarget) => {
+      const event = new KeyboardEvent('keydown', { key: '/', bubbles: true, cancelable: true });
+      target.dispatchEvent(event);
+      return event;
+    };
+    expect(slash(document.body).defaultPrevented).toBeTrue();
+    expect(document.activeElement).toBe(box);
+    expect(slash(box).defaultPrevented).toBeFalse(); // a "/" typed into the box is just a character
+    el().remove();
+  });
+
+  it('Escape clears the search, and a clear button appears only when there is text', async () => {
+    load(DATA);
+    const box = el().querySelector('#recipe-search') as HTMLInputElement;
+    expect(el().querySelector('.index-search__clear')).toBeNull();
+    box.value = 'dish 4';
+    box.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(el().querySelector('.index-search__clear')!.getAttribute('aria-label')).toBe('Clear search');
+
+    box.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance.searchKey).toBe('');
+    expect(titles().length).toBe(4);
+  });
+
+  it('search examples come only from real cuisines and meal types', () => {
+    load(DATA);
+    expect((fixture.componentInstance as any).searchExamples).toEqual(['Thai', 'Thai-fusion', 'Italian', 'Lunch', 'Dinner', 'Snack']);
+  });
+
+  it('"Surprise me" is disabled with an explanation when nothing is visible', () => {
+    load(DATA);
+    const button = () => el().querySelector('.surprise') as HTMLButtonElement;
+    expect(button().disabled).toBeFalse();
+    fixture.componentInstance.searchKey = 'nothing like this';
+    fixture.detectChanges();
+    expect(button().disabled).toBeTrue();
+    expect(button().getAttribute('aria-label')).toContain('no recipes to choose from');
+  });
+
+  it('shows skeleton tiles while loading, hidden from assistive tech, with a status text', () => {
+    expect(el().querySelectorAll('.skeleton-tile').length).toBe(8);
+    expect(el().querySelector('.skeleton-tile')!.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(el().querySelector('[role="status"]')!.textContent).toContain('Loading recipes');
+    load([]);
+  });
+
   it('shows a designed empty state for an empty library', () => {
     load([]);
     expect(el().textContent).toContain('No recipes match');

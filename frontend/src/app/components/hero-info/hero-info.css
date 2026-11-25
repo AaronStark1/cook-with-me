@@ -1,0 +1,247 @@
+:host {
+  display: contents;
+}
+
+/* ---- Active recipe info (yolk block) ---- */
+.hero__info {
+  position: absolute;
+  left: var(--gutter);
+  bottom: clamp(1.25rem, 3cqw, 2.5rem);
+  z-index: 30;
+  width: min(25rem, 36cqw);
+  padding: 1.15rem 1.3rem 1.35rem;
+  background: var(--yolk);
+  color: var(--broth);
+  border: var(--rule) solid var(--broth);
+  pointer-events: auto;
+}
+
+.hero__info-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.hero__count {
+  margin: 0;
+}
+
+.hero__count-n {
+  margin-left: 0.45rem;
+  font-size: 1.25rem;
+  vertical-align: -0.2em;
+}
+
+.hero__recipe {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.hero__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---- The rewrite: title words rise from a mask, tags stagger, the button slides in last.
+        Two identical keyframe sets (a/b) so every change replays without recreating DOM. ---- */
+.hi-word {
+  display: inline-block;
+}
+
+.hero__info-inner--a .hi-word { animation: hi-mask-a 520ms var(--ease-arrive) calc(260ms + var(--i, 0) * 60ms) both; }
+.hero__info-inner--b .hi-word { animation: hi-mask-b 520ms var(--ease-arrive) calc(260ms + var(--i, 0) * 60ms) both; }
+.hero__info-inner--a .hi-tag { animation: hi-rise-a 420ms var(--ease-arrive) calc(420ms + var(--i, 0) * 40ms) both; }
+.hero__info-inner--b .hi-tag { animation: hi-rise-b 420ms var(--ease-arrive) calc(420ms + var(--i, 0) * 40ms) both; }
+.hero__info-inner--a .hi-cta { animation: hi-slide-a 460ms var(--ease-arrive) 600ms both; }
+.hero__info-inner--b .hi-cta { animation: hi-slide-b 460ms var(--ease-arrive) 600ms both; }
+
+@keyframes hi-mask-a {
+  from { clip-path: inset(-0.2em -0.2em 100% -0.2em); translate: 0 100%; }
+  to { clip-path: inset(-0.2em -0.2em -0.2em -0.2em); translate: 0 0; }
+}
+@keyframes hi-mask-b {
+  from { clip-path: inset(-0.2em -0.2em 100% -0.2em); translate: 0 100%; }
+  to { clip-path: inset(-0.2em -0.2em -0.2em -0.2em); translate: 0 0; }
+}
+@keyframes hi-rise-a { from { opacity: 0; translate: 0 8px; } }
+@keyframes hi-rise-b { from { opacity: 0; translate: 0 8px; } }
+@keyframes hi-slide-a { from { opacity: 0; translate: -18px 0; } }
+@keyframes hi-slide-b { from { opacity: 0; translate: -18px 0; } }
+
+/* ---- Controls: a solid broth bar, legible over any field colour ---- */
+.hero__controls {
+  position: absolute;
+  right: var(--gutter);
+  bottom: clamp(1.25rem, 3cqw, 2.5rem);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem;
+  background: var(--broth);
+  border: var(--rule) solid var(--ink);
+  pointer-events: auto;
+}
+
+.ctl {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--broth);
+  background: var(--ink);
+  border: 2px solid var(--ink);
+  cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease), border-color var(--dur-micro) var(--ease);
+}
+
+.ctl:hover {
+  background: var(--yolk);
+  border-color: var(--yolk);
+}
+
+.ctl i {
+  transition: translate var(--dur-ui) var(--ease);
+}
+
+.ctl:hover .bi-arrow-left,
+.ctl:focus-visible .bi-arrow-left { translate: -3px 0; }
+
+.ctl:hover .bi-arrow-right,
+.ctl:focus-visible .bi-arrow-right { translate: 3px 0; }
+
+.ctl:active {
+  scale: 0.94;
+}
+
+.dots {
+  display: flex;
+  margin: 0 0.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.dot {
+  display: grid;
+  place-items: center;
+  min-width: 44px;
+  height: 48px;
+  padding: 0 15px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+/* a square that grows into a bar when active; the bar fills over the autoplay interval */
+.dot span {
+  position: relative;
+  display: block;
+  width: 14px;
+  height: 14px;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  background: transparent;
+  transform-origin: left center;
+  transition: background-color 0.2s, border-color 0.2s, scale 0.42s var(--ease-glide), translate 0.42s var(--ease-glide);
+}
+
+.dot:hover span {
+  background: var(--muted);
+}
+
+.dot[aria-current='true'] span {
+  scale: 3 1;
+  translate: -14px 0;
+  border-color: var(--yolk);
+  background: var(--yolk);
+}
+
+.dot[aria-current='true'] {
+  padding: 0 29px;
+}
+
+/* the countdown: a flat cream bar wiping across the yolk */
+.dot span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.dot[aria-current='true'] span::after {
+  animation: dot-fill var(--cycle, 5200ms) linear both paused;
+}
+
+/* it only moves while the countdown itself is running, so it freezes with it */
+.dots.is-running .dot[aria-current='true'] span::after {
+  animation-play-state: running;
+}
+
+@keyframes dot-fill {
+  to { transform: scaleX(1); }
+}
+
+@container (max-width: 820px) {
+  .hero__info,
+  .hero__controls {
+    position: relative;
+    inset: auto;
+    width: auto;
+    margin: 1.25rem var(--gutter) 0;
+  }
+
+  .hero__controls {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-top: 1rem;
+  }
+
+  .dots {
+    order: 3;
+    flex: 1 0 100%;
+    justify-content: center;
+    margin: 0;
+  }
+
+  .dot {
+    padding: 0 12px;
+  }
+
+  .dot[aria-current='true'] {
+    padding: 0 26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hi-word,
+  .hi-tag,
+  .hi-cta {
+    animation: none !important;
+  }
+
+  .dot span,
+  .ctl,
+  .ctl i {
+    transition: none;
+  }
+
+  .dot span::after {
+    display: none;
+  }
+
+  .ctl:hover i,
+  .ctl:active {
+    translate: none;
+    scale: none;
+  }
+}

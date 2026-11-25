@@ -24,3 +24,20 @@
   min-width: 3.5rem;
   font-size: clamp(2rem, 4.5vw, 3rem);
 }
+
+/* Decorative strength meter: four hard squares that fill as the password grows. */
+.meter {
+  display: flex;
+  gap: 4px;
+  margin-top: 0.5rem;
+}
+
+.meter i {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--broth);
+}
+
+.meter .is-on {
+  background: var(--broth);
+}

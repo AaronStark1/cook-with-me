@@ -97,6 +97,81 @@ describe('ViewRecipe', () => {
     expect(el().querySelector('.alert')!.textContent).toContain('already in your collection');
   });
 
+  it('ingredients can be ticked off; the state is remembered per recipe and can be reset', () => {
+    Object.keys(localStorage).filter((k) => k.startsWith('cwm.')).forEach((k) => localStorage.removeItem(k));
+    load();
+    const checks = () => Array.from(el().querySelectorAll<HTMLButtonElement>('.ingredients .check'));
+    expect(checks().map((c) => c.getAttribute('aria-pressed'))).toEqual(['false', 'false']);
+    expect(el().querySelector('.ingredients__reset')).toBeNull();
+
+    checks()[1].click();
+    fixture.detectChanges();
+    expect(checks()[1].getAttribute('aria-pressed')).toBe('true');
+    expect(JSON.parse(localStorage.getItem('cwm.checks.v1.abc')!).v.ingredients).toEqual([1]);
+
+    (el().querySelector('.ingredients__reset') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(checks()[1].getAttribute('aria-pressed')).toBe('false');
+    expect(localStorage.getItem('cwm.checks.v1.abc')).toBeNull();
+  });
+
+  it('each method numeral is a "done" toggle with a spoken state', () => {
+    Object.keys(localStorage).filter((k) => k.startsWith('cwm.')).forEach((k) => localStorage.removeItem(k));
+    load();
+    const toggle = () => el().querySelectorAll<HTMLButtonElement>('.steps__n')[0];
+    expect(toggle().getAttribute('aria-pressed')).toBe('false');
+    expect(toggle().getAttribute('aria-label')).toBe('Step 1. Mark as done');
+    toggle().click();
+    fixture.detectChanges();
+    expect(toggle().getAttribute('aria-pressed')).toBe('true');
+    expect(toggle().getAttribute('aria-label')).toContain('done');
+    expect(el().querySelectorAll('.steps li')[0].classList).toContain('is-done');
+    toggle().click();
+    fixture.detectChanges();
+  });
+
+  it('offers "Start cooking" only when the recipe has instructions', () => {
+    load();
+    expect(el().querySelector('.feature__cook')!.textContent).toContain('Start cooking');
+  });
+
+  it('hides "Start cooking" for a recipe without instructions', () => {
+    load({ _id: 'abc', name: 'Bare', ingredients: [], instructions: [] });
+    expect(el().querySelector('.feature__cook')).toBeNull();
+  });
+
+  it('a successful save swaps the label to "Saved", shows the stamp and keeps the status message', () => {
+    TestBed.inject(AuthService).setSession(fakeJwt(), { username: 'a', email: 'a@b.co', role: 'User' });
+    fixture.detectChanges();
+    load();
+    const save = () => el().querySelector('.feature__save') as HTMLButtonElement;
+    expect(el().querySelector('app-stamp')).toBeNull();
+    save().click();
+    http.expectOne(`${api}/api/savedRecipe/abc`).flush({});
+    fixture.detectChanges();
+    expect(save().textContent).toContain('Saved');
+    expect(el().querySelector('app-stamp')!.getAttribute('aria-hidden')).toBe('true'); // decorative
+    expect(el().querySelector('.alert')!.textContent).toContain('Saved to your collection.');
+  });
+
+  it('a failed save never shows the stamp', () => {
+    TestBed.inject(AuthService).setSession(fakeJwt(), { username: 'a', email: 'a@b.co', role: 'User' });
+    fixture.detectChanges();
+    load();
+    (el().querySelector('.feature__save') as HTMLButtonElement).click();
+    http.expectOne(`${api}/api/savedRecipe/abc`).flush({ message: 'Nope' }, { status: 500, statusText: 'Server Error' });
+    fixture.detectChanges();
+    expect(el().querySelector('app-stamp')).toBeNull();
+    expect(el().querySelector('.alert')!.textContent).toContain('Nope');
+  });
+
+  it('shows a skeleton of the recipe head while loading', () => {
+    expect(el().querySelectorAll('.skeleton').length).toBeGreaterThan(2);
+    expect(el().querySelector('[role="status"]')!.textContent).toContain('Loading recipe');
+    load();
+    expect(el().querySelector('.skeleton')).toBeNull();
+  });
+
   it('shows a branded not-found state for a missing recipe', () => {
     http.expectOne(`${api}/api/viewRecipe/abc`).flush({}, { status: 404, statusText: 'Not Found' });
     fixture.detectChanges();

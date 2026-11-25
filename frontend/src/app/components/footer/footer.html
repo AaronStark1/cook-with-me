@@ -2,8 +2,10 @@
 
   <div class="wrap site-footer__top">
 
-    <p class="site-footer__mark" aria-hidden="true">
-      Cook <span>With Me</span>
+    <!-- decorative sign-off: letters rise from a mask, then the yolk block wipes in -->
+    <p class="site-footer__mark" aria-hidden="true" appReveal="mark">
+      @for (letter of letters; track $index) {<b [style.--i]="$index">{{ letter }}</b>}
+      <span>With Me</span>
     </p>
 
     <div class="site-footer__cols">
@@ -29,12 +31,12 @@
       </nav>
 
       <div>
-        <h2 class="label site-footer__head">Get in touch</h2>
-        <address>
-          NYC 4567, PO Berlin<br />
-          <a href="mailto:cookwithme@gmail.com">cookwithme&#64;gmail.com</a><br />
-          <a href="tel:989898989">989898989</a>
-        </address>
+        <h2 class="label site-footer__head">From our kitchen</h2>
+        <p class="site-footer__note">
+          Honest, home-tested recipes for every night of the week. Cooked something you loved?
+          We'd love to hear how it turned out.
+        </p>
+        <a class="site-footer__note-cta" routerLink="/contact">Share your story →</a>
       </div>
 
     </div>
@@ -44,6 +46,9 @@
     <div class="wrap site-footer__base-inner">
       <span class="label">© {{ year }} Cook With Me</span>
       <a class="label" routerLink="/all-recipes">Find something to cook →</a>
+      <button type="button" class="site-footer__up label" (click)="toTop()">
+        Back to top <i class="bi bi-arrow-up" aria-hidden="true"></i>
+      </button>
     </div>
   </div>
 

@@ -1,0 +1,99 @@
+/* Admin motion — a working tool: every entrance/hover/glide is ≤200ms, transform / opacity /
+   clip-path only (plus one hard, blur-less box-shadow). Unencapsulated, always under .admin.
+   Every animated state is added by script at runtime, so without it the page is simply complete. */
+
+/* ---- Sidebar: ONE edge bar glides to the active link (measured in admin-layout.ts).
+   Not measured (e.g. the closed mobile menu) → no .has-bar → the per-link edge stays. ---- */
+.admin .admin__nav ul.has-bar {
+  position: relative;
+}
+
+.admin .admin__nav ul.has-bar a.is-active {
+  border-left-color: transparent;
+}
+
+.admin .admin__nav ul.has-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 1px;
+  background: var(--ink);
+  transform: translateY(var(--bar-y, 0px)) scaleY(var(--bar-h, 0));
+  transform-origin: left top;
+  pointer-events: none;
+}
+
+.admin .admin__nav ul.has-bar.is-ready::after {
+  transition: transform var(--dur-ui) var(--ease-glide);
+}
+
+/* ---- Tables: a 6px yolk edge slides in on the hovered / focused row ---- */
+.admin .table tbody td:first-child:not([colspan]) {
+  box-shadow: inset 0 0 0 var(--yolk);
+  transition: box-shadow var(--dur-ui) var(--ease);
+}
+
+.admin .table tbody tr:focus-within > td:first-child:not([colspan]) {
+  box-shadow: inset 6px 0 0 var(--yolk);
+}
+
+@media (hover: hover) {
+  .admin .table tbody tr:hover > td:first-child:not([colspan]) {
+    box-shadow: inset 6px 0 0 var(--yolk);
+  }
+}
+
+/* ---- Rows arrive once on load: first 10 only, 25ms apart (appRowsIn adds .rows-in and --i) ---- */
+.admin .table .rows-in > tr:nth-child(-n + 10) > td {
+  animation: admin-row-in var(--dur-ui) var(--ease-arrive) backwards;
+  animation-delay: calc(var(--i, 0) * 25ms);
+}
+
+@keyframes admin-row-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+/* ---- A confirmed removal: the row's cells wipe out right → left, then the data drops the row ---- */
+.admin .table tbody > tr.is-leaving > td {
+  animation: admin-row-out 360ms var(--ease-wipe) forwards;
+  pointer-events: none;
+}
+
+@keyframes admin-row-out {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+
+  to {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+
+/* ---- A confirmed status change: the new tag wipes in ---- */
+.admin .table .tag.is-fresh {
+  animation: admin-tag-in var(--dur-ui) var(--ease-wipe) backwards;
+}
+
+@keyframes admin-tag-in {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin .admin__nav ul.has-bar.is-ready::after,
+  .admin .table tbody td:first-child:not([colspan]) {
+    transition: none;
+  }
+
+  .admin .table .rows-in > tr:nth-child(-n + 10) > td,
+  .admin .table tbody > tr.is-leaving > td,
+  .admin .table .tag.is-fresh {
+    animation: none;
+  }
+}

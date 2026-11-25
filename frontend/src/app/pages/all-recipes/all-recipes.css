@@ -21,11 +21,54 @@
   line-height: 0.95;
 }
 
+.index-head__side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem 2rem;
+}
+
+.index-head__side.is-pending {
+  visibility: hidden;
+}
+
 .index-head__count {
   display: flex;
   align-items: flex-end;
   gap: 0.75rem;
   margin: 0;
+}
+
+/* "Surprise me": a square yolk button with a small platter glyph */
+.surprise__plate {
+  position: relative;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  transition: rotate 420ms var(--ease-arrive);
+}
+
+.surprise__plate::before,
+.surprise__plate::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+}
+
+.surprise__plate::before {
+  inset: 2px;
+  border: 2px dashed currentColor;
+}
+
+.surprise__plate::after {
+  inset: 34%;
+  background: currentColor;
+}
+
+.surprise:hover:not(:disabled) .surprise__plate,
+.surprise:focus-visible .surprise__plate {
+  rotate: 120deg;
 }
 
 .index-head__count .numeral {
@@ -43,16 +86,80 @@
   margin-bottom: 1.75rem;
 }
 
+.index-search__field {
+  position: relative;
+}
+
 .index-search .form-control {
   min-height: 60px;
+  padding-right: 4.25rem;
   font-size: 1.2rem;
   font-weight: 600;
+}
+
+/* the native clear control is replaced by our own square button */
+.index-search .form-control::-webkit-search-cancel-button {
+  display: none;
+}
+
+.index-search__key {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.3rem;
+  border: 2px solid currentColor;
+  font-size: 0.7rem;
+  line-height: 1.2;
+}
+
+.index-search__clear {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  color: var(--ink);
+  background: var(--broth);
+  border: 0;
+  cursor: pointer;
+}
+
+.index-search__clear:hover {
+  color: var(--broth);
+  background: var(--yolk);
+}
+
+@media (hover: none) {
+  .index-search__key {
+    display: none; /* no keyboard, no shortcut hint */
+  }
 }
 
 /* ---- Filter chips ---- */
 .filters {
   display: grid;
   gap: 1.25rem;
+}
+
+/* loading stand-ins: one row of chips on wide screens, two on tablets, about four on phones */
+.filters--skeleton .skeleton {
+  height: 67px;
+}
+
+@media (max-width: 1199.98px) {
+  .filters--skeleton .skeleton {
+    height: 119px;
+  }
+}
+
+@media (max-width: 640px) {
+  .filters--skeleton .skeleton {
+    height: 223px;
+  }
 }
 
 .filters__label {
@@ -72,6 +179,7 @@
 }
 
 .chip {
+  position: relative;
   min-height: 44px;
   padding: 0.45rem 1rem;
   font: 800 0.75rem/1 var(--font-body);
@@ -81,7 +189,22 @@
   background: transparent;
   border: 2px solid var(--ink);
   cursor: pointer;
-  transition: background-color 0.12s var(--ease), color 0.12s var(--ease);
+  transition: color 0.18s var(--ease), border-color 0.18s var(--ease), background-color 0.12s var(--ease);
+}
+
+.chip > span {
+  position: relative;
+}
+
+/* selecting fills with yolk from the left; deselecting drains to the right */
+.chip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--yolk);
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 0.18s var(--ease);
 }
 
 .chip:hover {
@@ -90,9 +213,13 @@
 
 /* selected: yolk block, broth text (12:1) — also marked by aria-pressed, not colour alone */
 .chip[aria-pressed='true'] {
-  background: var(--yolk);
   color: var(--broth);
   border-color: var(--broth);
+}
+
+.chip[aria-pressed='true']::before {
+  transform: scaleX(1);
+  transform-origin: left center;
 }
 
 /* ---- Results (cream) ---- */
@@ -118,6 +245,7 @@
 }
 
 .grid {
+  position: relative; /* leaving tiles are pinned inside it while they wipe out */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(15.5rem, 100%), 1fr));
   gap: clamp(1.75rem, 3vw, 2.75rem) clamp(1rem, 2vw, 1.75rem);
@@ -127,7 +255,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chip {
+  .chip,
+  .chip::before,
+  .surprise__plate {
     transition: none;
   }
 }

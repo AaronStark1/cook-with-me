@@ -1,6 +1,6 @@
 <section class="auth band band--paper" aria-labelledby="login-title">
 
-  <div class="auth__platter" aria-hidden="true"></div>
+  <div class="auth__platter" appPlatterDrift aria-hidden="true"></div>
 
   <div class="wrap auth__grid">
 
@@ -26,7 +26,7 @@
         <div class="alert alert-danger" role="alert">{{ errorMessage }}</div>
       }
 
-      <form [formGroup]="loginForm" (ngSubmit)="login()" novalidate>
+      <form [formGroup]="loginForm" (ngSubmit)="login()" appShakeInvalid novalidate>
 
         <div class="auth__field">
           <label for="email" class="form-label">Email</label>
@@ -40,30 +40,48 @@
             formControlName="email"
           />
           <div class="invalid-feedback">
-            @if (f['email'].errors?.['required']) {
-              Email is required.
-            } @else {
-              Enter a valid email address.
-            }
+            <span>
+              @if (f['email'].errors?.['required']) {
+                Email is required.
+              } @else {
+                Enter a valid email address.
+              }
+            </span>
           </div>
         </div>
 
         <div class="auth__field">
           <label for="password" class="form-label">Password</label>
-          <input
-            id="password"
-            type="password"
-            class="form-control"
-            [class.is-invalid]="submitted && f['password'].invalid"
-            placeholder="Password"
-            autocomplete="current-password"
-            formControlName="password"
-          />
-          <div class="invalid-feedback">Password is required.</div>
+          <div class="auth__pw">
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              class="form-control"
+              [class.is-invalid]="submitted && f['password'].invalid"
+              placeholder="Password"
+              autocomplete="current-password"
+              formControlName="password"
+            />
+            <button
+              type="button"
+              class="auth__eye"
+              [attr.aria-pressed]="showPassword"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+              (click)="showPassword = !showPassword"
+            >
+              <i class="bi" [class.bi-eye]="!showPassword" [class.bi-eye-slash]="showPassword" aria-hidden="true"></i>
+            </button>
+            <div class="invalid-feedback"><span>Password is required.</span></div>
+          </div>
         </div>
 
+        <!-- both labels share one grid cell (stable width); only the visible one is read out -->
         <button type="submit" class="btn-cwm btn-cwm--broth auth__submit" [disabled]="loading">
-          {{ loading ? 'Signing in…' : 'Sign In' }}
+          <span class="auth__go" [class.is-on]="!loading">Sign In</span>
+          <span class="auth__go" [class.is-on]="loading">
+            <span class="loader" [class.loader--still]="!loading" aria-hidden="true"></span>
+            Signing in…
+          </span>
         </button>
 
       </form>

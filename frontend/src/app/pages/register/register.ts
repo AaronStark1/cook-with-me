@@ -2,11 +2,25 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { Apiservice } from '../../services/apiservice';
+import { PlatterDrift, ShakeInvalid } from '../auth/auth-motion';
+
+/**
+ * A rough 0–4 read of a password, from what was typed only (length and
+ * character classes). It feeds the decorative meter and nothing else — the
+ * form's validators are the only thing that decides whether a password is accepted.
+ */
+export function passwordScore(value: string | null | undefined): number {
+  const text = value ?? '';
+  if (!text) return 0;
+  if (text.length < 8) return 1;
+  const classes = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter((re) => re.test(text)).length;
+  return 2 + (classes >= 3 ? 1 : 0) + (text.length >= 12 ? 1 : 0);
+}
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, PlatterDrift, ShakeInvalid],
   templateUrl: './register.html',
   styleUrls: ['../auth/auth.css', './register.css']
 })
@@ -16,6 +30,9 @@ export class Register {
   submitted = false;
   loading = false;
   errorMessage = '';
+  /** Presentation only: flips the password input between `password` and `text`. */
+  showPassword = false;
+  readonly meterSteps = [1, 2, 3, 4];
 
   constructor(
     private fb: FormBuilder,
@@ -32,6 +49,11 @@ export class Register {
 
   get f() {
     return this.registerForm.controls;
+  }
+
+  /** Squares lit in the (decorative) strength meter. */
+  get strength(): number {
+    return passwordScore(this.f['password'].value);
   }
 
   submit() {

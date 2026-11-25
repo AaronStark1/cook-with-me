@@ -1,5 +1,8 @@
+import { Component } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 
 import { AdminLayout } from './admin-layout';
 import { appTestProviders } from '../../../testing/providers';
@@ -87,5 +90,99 @@ describe('AdminLayout', () => {
 
       expect(nav().classList).not.toContain('is-open');
     });
+  });
+});
+
+@Component({ template: '' })
+class BlankPage {}
+
+describe('AdminLayout — sidebar indicator bar', () => {
+  let fixture: ComponentFixture<AdminLayout>;
+  const el = () => fixture.nativeElement as HTMLElement;
+  const list = () => el().querySelector<HTMLElement>('#admin-nav ul')!;
+  const active = () => list().querySelector<HTMLElement>('a[aria-current="page"]');
+  const frames = async (count: number) => {
+    for (let i = 0; i < count; i++) await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  };
+
+  /** Lands on /admin/userslist with the nav open, so it can be measured at any viewport width. */
+  async function open(reducedMotion = false) {
+    if (reducedMotion) {
+      spyOn(window, 'matchMedia').and.returnValue({ matches: true, addEventListener() {}, removeEventListener() {} } as unknown as MediaQueryList);
+    }
+    fixture = TestBed.createComponent(AdminLayout);
+    fixture.detectChanges();
+    await TestBed.inject(Router).navigateByUrl('/admin/userslist');
+    fixture.componentInstance.toggleNav();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.placeBar();
+  }
+
+  beforeEach(async () => {
+    sessionStorage.clear();
+    await TestBed.configureTestingModule({
+      imports: [AdminLayout],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([
+          { path: 'admin/userslist', component: BlankPage },
+          { path: 'admin/recipe/add', component: BlankPage },
+        ]),
+      ],
+    }).compileComponents();
+  });
+
+  afterEach(() => sessionStorage.clear());
+
+  it('measures the active link into one bar and keeps the active markers', async () => {
+    await open();
+
+    const link = active()!;
+    expect(link.textContent).toContain('Users');
+    expect(link.classList).toContain('is-active');
+    expect(list().querySelectorAll('a[aria-current="page"]').length).toBe(1);
+
+    expect(list().classList).toContain('has-bar');
+    expect(Number(list().style.getPropertyValue('--bar-h'))).toBeCloseTo(link.getBoundingClientRect().height, 1);
+    expect(parseFloat(list().style.getPropertyValue('--bar-y')))
+      .toBeCloseTo(link.getBoundingClientRect().top - list().getBoundingClientRect().top, 1);
+  });
+
+  it('places the bar without animation first and only then enables the glide', async () => {
+    await open();
+    await frames(4);
+    expect(list().classList).toContain('is-ready');
+  });
+
+  it('closes the bar when no sidebar link is active', async () => {
+    await open();
+    await TestBed.inject(Router).navigateByUrl('/admin/recipe/add');
+    fixture.componentInstance.toggleNav();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.componentInstance.placeBar();
+
+    expect(active()).toBeNull();
+    expect(list().style.getPropertyValue('--bar-h')).toBe('0');
+  });
+
+  it('falls back to the per-link style while the list cannot be measured', async () => {
+    await open();
+    el().querySelector<HTMLElement>('#admin-nav')!.style.display = 'none';
+    fixture.componentInstance.placeBar();
+
+    expect(list().classList).not.toContain('has-bar');
+    expect(list().classList).not.toContain('is-ready');
+    expect(active()!.classList).toContain('is-active');
+  });
+
+  it('never enables the glide under reduced motion', async () => {
+    await open(true);
+    await frames(4);
+
+    expect(list().classList).toContain('has-bar');
+    expect(list().classList).not.toContain('is-ready');
   });
 });

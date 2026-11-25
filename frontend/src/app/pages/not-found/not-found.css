@@ -29,6 +29,32 @@
   background: var(--ink);
 }
 
+/* the plate rolls in from the left, settles with a damped wobble, and spins when poked */
+@media (prefers-reduced-motion: no-preference) {
+  .nf__plate {
+    animation: nf-roll 1.4s var(--ease-arrive) both;
+    pointer-events: auto;
+  }
+
+  .nf__plate:hover,
+  .nf__plate:active {
+    animation: nf-spin 620ms var(--ease-arrive);
+  }
+}
+
+@keyframes nf-roll {
+  0% { translate: -110vw 0; rotate: -620deg; }
+  62% { translate: 0 0; rotate: 14deg; }
+  78% { rotate: -7deg; }
+  90% { rotate: 3deg; }
+  100% { translate: 0 0; rotate: 0deg; }
+}
+
+@keyframes nf-spin {
+  from { rotate: 0deg; }
+  to { rotate: 360deg; }
+}
+
 .nf__plate::before {
   content: '';
   position: absolute;

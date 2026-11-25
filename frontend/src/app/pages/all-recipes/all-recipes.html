@@ -2,31 +2,66 @@
 <section class="band band--paper index-head" aria-labelledby="index-title">
   <div class="wrap">
 
-    <p class="kicker">The recipe index</p>
+    <p class="kicker" appReveal="rule">The recipe index</p>
 
     <div class="index-head__row">
-      <h1 id="index-title" class="index-head__title">All recipes</h1>
-      @if (!loading && !errorMessage) {
-        <p class="index-head__count">
-          <span class="numeral">{{ allRecipes.length }}</span>
-          <span class="label">{{ allRecipes.length === 1 ? 'recipe' : 'recipes' }} to cook</span>
-        </p>
+      <h1 id="index-title" class="index-head__title" appReveal="mask">All recipes</h1>
+      @if (!errorMessage) {
+        <!-- rendered (invisibly) while loading too, so the head already has its final height -->
+        <div class="index-head__side" [class.is-pending]="loading" [attr.aria-hidden]="loading ? 'true' : null">
+          <p class="index-head__count">
+            <app-odometer
+              class="numeral"
+              [value]="visible.length"
+              [label]="visible.length + (visible.length === 1 ? ' recipe' : ' recipes')"
+            />
+            <span class="label" aria-hidden="true">{{ visible.length === 1 ? 'recipe' : 'recipes' }} to cook</span>
+          </p>
+          <button
+            type="button"
+            class="btn-cwm surprise"
+            (click)="surprise()"
+            [disabled]="!visible.length"
+            [attr.aria-label]="visible.length ? 'Surprise me: pick a recipe at random' : 'Surprise me — no recipes to choose from'"
+          >
+            <span class="surprise__plate" aria-hidden="true"></span>
+            Surprise me
+          </button>
+        </div>
       }
     </div>
 
     <div class="index-search">
-      <label for="recipe-search" class="form-label">Search recipes</label>
-      <input
-        id="recipe-search"
-        [(ngModel)]="searchKey"
-        type="search"
-        class="form-control"
-        placeholder="Try “pasta” or “salad”"
-        autocomplete="off"
-      />
+      <label for="recipe-search" class="form-label">Search recipes <span class="index-search__key" aria-hidden="true">/</span></label>
+      <div class="index-search__field">
+        <input
+          #searchBox
+          id="recipe-search"
+          [(ngModel)]="searchKey"
+          type="search"
+          class="form-control"
+          placeholder="Search by name"
+          autocomplete="off"
+          aria-keyshortcuts="/"
+          appTypedPlaceholder
+          [examples]="searchExamples"
+          (keydown.escape)="onSearchEscape($event)"
+        />
+        @if (searchKey) {
+          <button type="button" class="index-search__clear" (click)="clearSearch()" aria-label="Clear search">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+        }
+      </div>
     </div>
 
-    @if (cuisineType.length || mealTypes.length) {
+    @if (loading) {
+      <!-- stand-in for the filter chips, sized like a typical set so the results below barely move -->
+      <div class="filters filters--skeleton" aria-hidden="true">
+        <div class="skeleton"></div>
+        <div class="skeleton"></div>
+      </div>
+    } @else if (cuisineType.length || mealTypes.length) {
       <div class="filters">
 
         @if (cuisineType.length) {
@@ -34,11 +69,11 @@
             <h2 id="filter-cuisine" class="label filters__label">Cuisine</h2>
             <ul class="chips">
               <li>
-                <button type="button" class="chip" [attr.aria-pressed]="!selectedCuisine" (click)="selectCuisine(null)">Any</button>
+                <button type="button" class="chip" [attr.aria-pressed]="!selectedCuisine" (click)="selectCuisine(null)"><span>Any</span></button>
               </li>
               @for (item of cuisineType; track item) {
                 <li>
-                  <button type="button" class="chip" [attr.aria-pressed]="item === selectedCuisine" (click)="selectCuisine(item)">{{ item }}</button>
+                  <button type="button" class="chip" [attr.aria-pressed]="item === selectedCuisine" (click)="selectCuisine(item)"><span>{{ item }}</span></button>
                 </li>
               }
             </ul>
@@ -50,11 +85,11 @@
             <h2 id="filter-meal" class="label filters__label">Meal type</h2>
             <ul class="chips">
               <li>
-                <button type="button" class="chip" [attr.aria-pressed]="!selectedMeal" (click)="selectMeal(null)">Any</button>
+                <button type="button" class="chip" [attr.aria-pressed]="!selectedMeal" (click)="selectMeal(null)"><span>Any</span></button>
               </li>
               @for (item of mealTypes; track item) {
                 <li>
-                  <button type="button" class="chip" [attr.aria-pressed]="item === selectedMeal" (click)="selectMeal(item)">{{ item }}</button>
+                  <button type="button" class="chip" [attr.aria-pressed]="item === selectedMeal" (click)="selectMeal(item)"><span>{{ item }}</span></button>
                 </li>
               }
             </ul>
@@ -75,7 +110,8 @@
 
     @if (errorMessage) {
 
-      <div class="state" role="alert">
+      <div class="state state--plate" role="alert">
+        <span class="loader loader--still" aria-hidden="true"></span>
         <p class="state__title">We couldn't load recipes</p>
         <p class="state__text">{{ errorMessage }}</p>
         <button type="button" class="btn-cwm btn-cwm--broth" (click)="getRecipe()">Try again</button>
@@ -83,14 +119,21 @@
 
     } @else if (loading) {
 
-      <div class="state" role="status">
-        <span class="loader" aria-hidden="true"></span>
-        <p class="state__text">Loading recipes…</p>
+      <!-- skeleton tiles hold the grid's shape; the status text is for assistive tech -->
+      <div role="status">
+        <p class="visually-hidden">Loading recipes…</p>
+        <ul class="grid" aria-hidden="true">
+          @for (i of skeletons; track i) {
+            <li class="skeleton-tile">
+              <span class="skeleton skeleton--photo"></span>
+              <span class="skeleton skeleton--line"></span>
+              <span class="skeleton skeleton--short"></span>
+            </li>
+          }
+        </ul>
       </div>
 
     } @else {
-
-      @let visible = recipes | search: searchKey;
 
       <div class="results-bar">
         <p class="label results-bar__count" role="status" aria-live="polite" aria-atomic="true">
@@ -105,7 +148,8 @@
 
       @if (!visible.length) {
 
-        <div class="state">
+        <div class="state state--plate">
+          <span class="loader loader--still" aria-hidden="true"></span>
           <p class="state__title">No recipes match</p>
           <p class="state__text">
             @if (!allRecipes.length) {
@@ -121,9 +165,12 @@
 
       } @else {
 
-        <ul class="grid">
+        <!-- filtering glides: survivors FLIP to their new places, leavers wipe out, newcomers rise in -->
+        <ul class="grid" appFlip>
           @for (recipe of visible; track recipe._id; let i = $index) {
-            <li><app-recipe-tile [recipe]="recipe" [index]="i" /></li>
+            <li>
+              <app-recipe-tile appReveal="tile batch" [recipe]="recipe" [index]="i" [highlight]="searchKey" />
+            </li>
           }
         </ul>
 

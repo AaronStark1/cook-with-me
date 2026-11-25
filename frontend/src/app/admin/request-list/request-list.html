@@ -36,7 +36,7 @@
           </tr>
         </thead>
 
-        <tbody>
+        <tbody appRowsIn>
 
           @for (item of testimonyList; track item._id; let i = $index) {
             <tr>
@@ -57,9 +57,9 @@
 
               <td>
                 @if (item.status === 'Approved') {
-                  <span class="tag tag--yolk">Approved</span>
+                  <span class="tag tag--yolk" [class.is-fresh]="item._id === freshId">Approved</span>
                 } @else if (item.status === 'Rejected') {
-                  <span class="tag tag--solid">Rejected</span>
+                  <span class="tag tag--solid" [class.is-fresh]="item._id === freshId">Rejected</span>
                 } @else {
                   <span class="tag">Pending</span>
                 }

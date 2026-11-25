@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { HeroCarousel, AUTOPLAY_MS } from './hero-carousel';
+import { HeroCarousel, AUTOPLAY_MS, MAX_TILT, USER_PAUSE_MS, dragSteps, tiltFor } from './hero-carousel';
 import { RecipeModel } from '../../models/recipe-model';
 import { appTestProviders } from '../../../testing/providers';
 
@@ -131,6 +131,32 @@ describe('HeroCarousel', () => {
       expect(cmp().activeIndex()).toBe(0);
     });
 
+    it('Home and End jump to the first and last recipe', () => {
+      const group = el().querySelector('[role="group"]') as HTMLElement;
+      group.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      fixture.detectChanges();
+      expect(cmp().activeIndex()).toBe(4);
+      group.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+      fixture.detectChanges();
+      expect(cmp().activeIndex()).toBe(0);
+    });
+
+    it('remembers the direction of travel so the wipe can mirror it', () => {
+      cmp().advance(1);
+      expect(cmp().dir()).toBe(1);
+      cmp().advance(-1);
+      expect(cmp().dir()).toBe(-1);
+      cmp().goTo(3); // 0 → 3 is the short way round: backwards
+      expect(cmp().dir()).toBe(-1);
+    });
+
+    it('shows the cuisine as a decorative ghost word and decorative garnish only', () => {
+      const ghost = el().querySelector('.lyr--word:not(.is-off) .ghost')!;
+      expect(ghost.textContent!.trim()).toBe('ITALIAN');
+      expect(ghost.closest('[aria-hidden="true"]')).not.toBeNull();
+      el().querySelectorAll('app-garnish').forEach((g) => expect(g.getAttribute('aria-hidden')).toBe('true'));
+    });
+
     it('rotates continuously: every dish moves exactly one step per turn, even across the wrap', () => {
       const thetas = () => Array.from(el().querySelectorAll<HTMLElement>('.dish')).map((d) => parseFloat(d.style.getPropertyValue('--theta')));
       for (let i = 0; i < 7; i++) {
@@ -159,7 +185,8 @@ describe('HeroCarousel', () => {
   });
 
   describe('autoplay', () => {
-    it('advances every ~5s and re-arms the timer after a manual change', fakeAsync(() => {
+    // Updated for the motion pass: a user action now holds the rotation for 6 s (it used to re-arm at 5.2 s).
+    it('advances every ~5s; any user action holds the rotation for 6s before it resumes', fakeAsync(() => {
       create(recipes(4));
       expect(cmp().activeIndex()).toBe(0);
       tick(AUTOPLAY_MS);
@@ -167,12 +194,63 @@ describe('HeroCarousel', () => {
       expect(cmp().activeIndex()).toBe(1);
 
       tick(AUTOPLAY_MS - 1000);
-      cmp().advance(1); // user acts: the countdown restarts
+      cmp().advance(1); // user acts: the countdown restarts, and is longer
       fixture.detectChanges();
-      tick(AUTOPLAY_MS - 1);
+      expect(cmp().cycleMs()).toBe(USER_PAUSE_MS);
+      tick(USER_PAUSE_MS - 1);
       expect(cmp().activeIndex()).toBe(2);
       tick(1);
       expect(cmp().activeIndex()).toBe(3);
+
+      // …and the automatic advance that follows is back on the normal cadence
+      fixture.detectChanges();
+      expect(cmp().cycleMs()).toBe(AUTOPLAY_MS);
+      tick(AUTOPLAY_MS);
+      expect(cmp().activeIndex()).toBe(0);
+      fixture.destroy();
+    }));
+
+    it('a paused countdown resumes where it left off instead of starting over', fakeAsync(() => {
+      create(recipes(3));
+      const hero = el().querySelector('.hero')!;
+      tick(AUTOPLAY_MS - 1200);
+      hero.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' }));
+      fixture.detectChanges();
+      tick(AUTOPLAY_MS * 2);
+      expect(cmp().activeIndex()).toBe(0);
+
+      hero.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' }));
+      fixture.detectChanges();
+      tick(1199);
+      expect(cmp().activeIndex()).toBe(0);
+      tick(1);
+      expect(cmp().activeIndex()).toBe(1);
+      fixture.destroy();
+    }));
+
+    it('stops while less than 30% of the hero is in the viewport', fakeAsync(() => {
+      create(recipes(3));
+      cmp().inView.set(false);
+      fixture.detectChanges();
+      tick(AUTOPLAY_MS * 3);
+      expect(cmp().activeIndex()).toBe(0);
+      expect(el().querySelector('.hero')!.classList).toContain('is-idle'); // idle loops pause with it
+
+      cmp().inView.set(true);
+      fixture.detectChanges();
+      tick(AUTOPLAY_MS);
+      expect(cmp().activeIndex()).toBe(1);
+      fixture.destroy();
+    }));
+
+    it('the active dot shows the countdown and freezes with it', fakeAsync(() => {
+      create(recipes(3));
+      const dots = () => el().querySelector('.dots') as HTMLElement;
+      expect(dots().classList).toContain('is-running');
+      expect(dots().style.getPropertyValue('--cycle')).toBe(`${AUTOPLAY_MS}ms`);
+      cmp().toggleAutoplay();
+      fixture.detectChanges();
+      expect(dots().classList).not.toContain('is-running');
       fixture.destroy();
     }));
 
@@ -248,6 +326,46 @@ describe('HeroCarousel', () => {
       tick(AUTOPLAY_MS * 2); // would throw "timers still in the queue" if a timer leaked
       expect(cmp().turns()).toBe(0); // and nothing advanced after destroy
     }));
+  });
+
+  describe('drag / swipe to spin', () => {
+    const W = 1000; // one position = half the hero width
+
+    it('snaps to the nearest position', () => {
+      expect(dragSteps(-520, 0, W, 0)).toBe(1);
+      expect(dragSteps(-760, 0, W, 0)).toBe(2);
+      expect(dragSteps(480, 10, W, 0)).toBe(-1);
+      expect(dragSteps(-20, 0, W, 0)).toBe(0);
+    });
+
+    it('a short drag still counts as a swipe past 45px when it is mostly horizontal', () => {
+      expect(dragSteps(-46, 5, W, 0)).toBe(1);
+      expect(dragSteps(60, -20, W, 0)).toBe(-1);
+      expect(dragSteps(-45, 0, W, 0)).toBe(0);
+      expect(dragSteps(-60, 90, W, 0)).toBe(0); // vertical-dominant: a scroll, not a swipe
+    });
+
+    it('a fast flick carries one extra step, only in its own direction', () => {
+      expect(dragSteps(-520, 0, W, -0.8)).toBe(2);
+      expect(dragSteps(520, 0, W, 0.8)).toBe(-2);
+      expect(dragSteps(-520, 0, W, 0.8)).toBe(1); // flicked back the other way: no bonus
+      expect(dragSteps(-520, 0, W, -0.3)).toBe(1);
+    });
+
+    it('is inert without a measurable width', () => {
+      expect(dragSteps(-500, 0, 0, -2)).toBe(0);
+    });
+  });
+
+  describe('pointer tilt', () => {
+    it('leans towards the pointer, up to ±8°, and is flat at the centre', () => {
+      expect(tiltFor(0, 0, 400)).toEqual([-0, 0]);
+      expect(tiltFor(400, 0, 400)).toEqual([-0, MAX_TILT]);
+      expect(tiltFor(0, -400, 400)).toEqual([MAX_TILT, 0]);
+      expect(tiltFor(5000, 5000, 400)).toEqual([-MAX_TILT, MAX_TILT]); // never more than the limit
+      expect(tiltFor(200, 0, 400)[1]).toBe(MAX_TILT / 2);
+      expect(tiltFor(10, 10, 0)).toEqual([0, 0]);
+    });
   });
 
   describe('prefers-reduced-motion', () => {

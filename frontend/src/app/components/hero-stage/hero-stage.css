@@ -1,0 +1,245 @@
+/* ==========================================================================
+   Hero stage — the depth stack around the lazy-Susan.
+   Geometry comes from the carousel (--D, --R, --ax, --ay, --rim; all cqw of
+   the hero), so the whole composition scales as one poster.
+
+   Stacking (inside .hero's isolated context):
+     0 field · 1 platter · 2 ghost word · 16–20 dishes · 24 garnish ·
+     26 foreground props · 27 poster type · 30 info / controls
+   ========================================================================== */
+:host {
+  display: contents;
+}
+
+.hero__dishes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* ---- wipe layers: the outer box takes the clip, the inner one travels ---- */
+.lyr,
+.lyr__move {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.lyr--word { z-index: 2; }
+.lyr--garnish { z-index: 24; }
+.lyr--props { z-index: 26; }
+
+.lyr.is-off {
+  visibility: hidden;
+}
+
+.lyr.is-off .bob {
+  animation-play-state: paused;
+}
+
+/* ---- ghost word ---- */
+.ghost {
+  --fs: 9cqw;
+  --ls: 0em;
+  --cc: 0.45;
+
+  position: absolute;
+  right: -2cqw;
+  top: calc(var(--ay) - var(--cc) * var(--fs));
+  font-family: var(--font-display);
+  font-size: var(--fs);
+  line-height: 1;
+  letter-spacing: var(--ls);
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--ink) 12%, transparent);
+  user-select: none;
+}
+
+/* ---- top-down tabletop: a broth disc centred on the wheel ---- */
+.hero__disc {
+  position: absolute;
+  z-index: 1;
+  width: calc(var(--rim) * 2);
+  height: calc(var(--rim) * 2);
+  left: calc(var(--ax) - var(--rim));
+  top: calc(var(--ay) + var(--R) - var(--rim));
+  border-radius: 50%;
+  background: var(--broth);
+  pointer-events: auto;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.hero__rotor {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform: rotate(var(--wheel, 0deg));
+  transition: transform var(--dur) var(--wheel-ease);
+}
+
+/* concentric rules; the dashed one makes the platter's rotation visible */
+.hero__ring {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.hero__ring--a { inset: 2.2%; border: 2px solid color-mix(in srgb, var(--ink) 40%, transparent); }
+.hero__ring--b { inset: 7%; border: 5px dashed var(--yolk); }
+.hero__ring--c { inset: 16%; border: 2px solid color-mix(in srgb, var(--ink) 25%, transparent); }
+
+/* ---- Dishes ---- */
+.dish {
+  position: absolute;
+  width: var(--D);
+  height: var(--D);
+  left: calc(var(--ax) - var(--D) / 2);
+  top: calc(var(--ay) + var(--R) - var(--D) / 2);
+  border-radius: 50%;
+  /* ride the ring: rotate out, move up the radius, counter-rotate to stay upright */
+  transform: rotate(var(--theta, 0deg)) translateY(calc(var(--R) * -1)) rotate(calc(var(--theta, 0deg) * -1)) scale(var(--s, 1));
+  transition: transform var(--dur) var(--wheel-ease), opacity 0.6s ease, filter 0.6s ease;
+  will-change: transform;
+  box-shadow: 0 1.6cqw 2.6cqw color-mix(in srgb, var(--broth) 55%, transparent);
+  /* depth of field: resting neighbours sit slightly out of focus */
+  filter: blur(0.14cqw);
+  pointer-events: auto;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+/* rack focus: only the dish arriving at / leaving the focal spot animates its blur */
+.dish.is-active {
+  filter: none;
+}
+
+/* flat contact shadow where the plate meets the table */
+.dish__shadow {
+  position: absolute;
+  inset: 6% -3% -7% 3%;
+  z-index: -1;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--broth) 22%, transparent);
+}
+
+.dish__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  /* the cream plate rim reads as a consistent "cut-out" edge on every photo */
+  border: 0.8cqw solid var(--ink);
+  background: var(--ink);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* pointer tilt (fine pointers only): the focal dish leans up to ±8° towards the pointer.
+   --tilt-x / --tilt-y are written by the carousel; this and the Assembly Demo are the only 3D in the app. */
+.dish.is-active .dish__img {
+  transform: perspective(70cqw) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 220ms var(--ease);
+}
+
+.dish__link {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: auto;
+  cursor: pointer;
+  -webkit-user-drag: none;
+}
+
+.dish--static {
+  --theta: 0deg;
+  --s: 1;
+}
+
+.is-dragging .dish,
+.is-dragging .hero__rotor {
+  transition: none;
+}
+
+.is-dragging .dish,
+.is-dragging .hero__disc,
+.is-dragging /* pointer tilt (fine pointers only): the focal dish leans up to ±8° towards the pointer.
+   --tilt-x / --tilt-y are written by the carousel; this and the Assembly Demo are the only 3D in the app. */
+.dish.is-active .dish__img {
+  transform: perspective(70cqw) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transition: transform 220ms var(--ease);
+}
+
+.dish__link {
+  cursor: grabbing;
+}
+
+/* ---- garnish stickers ---- */
+.piece {
+  position: absolute;
+  left: calc(var(--x) * 1cqw);
+  top: calc(var(--y) * 1cqw);
+  width: calc(var(--sz) * 1cqw);
+  height: calc(var(--sz) * 1cqw);
+  margin: calc(var(--sz) * -0.5cqw) 0 0 calc(var(--sz) * -0.5cqw);
+  rotate: var(--r, 0deg);
+}
+
+/* oversized and out of focus: the nearest objects to the lens */
+.piece--prop {
+  filter: blur(0.6cqw);
+}
+
+@container (max-width: 820px) {
+  .hero__dishes {
+    position: relative;
+    inset: auto;
+    height: 82cqw;
+  }
+
+  /* stacked stage: the word sits across the top of the platter, the dish overlapping its feet */
+  .ghost {
+    right: auto;
+    left: 50%;
+    top: calc(13cqw - var(--cc) * var(--fs));
+    translate: -50% 0;
+  }
+
+  .piece {
+    left: calc(var(--mx) * 1cqw);
+    top: calc(var(--my) * 1cqw);
+    width: calc(var(--msz) * 1cqw);
+    height: calc(var(--msz) * 1cqw);
+    margin: calc(var(--msz) * -0.5cqw) 0 0 calc(var(--msz) * -0.5cqw);
+  }
+
+  .lyr--garnish .piece:nth-child(n + 4) {
+    display: none;
+  }
+
+  .piece--prop {
+    filter: blur(1.4cqw);
+  }
+
+  .dish {
+    filter: blur(0.5cqw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dish,
+  .hero__rotor {
+    transition: opacity 0.15s linear;
+  }
+
+  .dish.is-active .dish__img {
+    transform: none;
+    transition: none;
+  }
+}
+
+:host-context(.hero.is-reduced) .dish,
+:host-context(.hero.is-reduced) .hero__rotor {
+  transition: opacity 0.15s linear;
+}

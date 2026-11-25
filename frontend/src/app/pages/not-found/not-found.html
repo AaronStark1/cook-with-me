@@ -15,6 +15,9 @@
     <div class="nf__actions">
       <a routerLink="/" class="btn-cwm">Back to home</a>
       <a routerLink="/all-recipes" class="btn-cwm btn-cwm--ghost">Browse recipes</a>
+      <button type="button" class="btn-cwm btn-cwm--ghost" (click)="surprise()" [disabled]="loading">
+        {{ loading ? 'Finding one…' : 'Surprise me' }}
+      </button>
     </div>
 
   </div>

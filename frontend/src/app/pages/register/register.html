@@ -1,6 +1,6 @@
 <section class="auth band band--paper" aria-labelledby="register-title">
 
-  <div class="auth__platter" aria-hidden="true"></div>
+  <div class="auth__platter" appPlatterDrift aria-hidden="true"></div>
 
   <div class="wrap auth__grid">
 
@@ -35,7 +35,7 @@
         <div class="alert alert-danger" role="alert">{{ errorMessage }}</div>
       }
 
-      <form [formGroup]="registerForm" (ngSubmit)="submit()" novalidate>
+      <form [formGroup]="registerForm" (ngSubmit)="submit()" appShakeInvalid novalidate>
 
         <div class="auth__field">
           <label for="username" class="form-label">Username</label>
@@ -48,7 +48,7 @@
             autocomplete="username"
             formControlName="username"
           />
-          <div class="invalid-feedback">Username is required (max 50 characters).</div>
+          <div class="invalid-feedback"><span>Username is required (max 50 characters).</span></div>
         </div>
 
         <div class="auth__field">
@@ -63,30 +63,54 @@
             formControlName="email"
           />
           <div class="invalid-feedback">
-            @if (f['email'].errors?.['required']) {
-              Email is required.
-            } @else {
-              Enter a valid email address.
-            }
+            <span>
+              @if (f['email'].errors?.['required']) {
+                Email is required.
+              } @else {
+                Enter a valid email address.
+              }
+            </span>
           </div>
         </div>
 
         <div class="auth__field">
           <label for="password" class="form-label">Password</label>
-          <input
-            id="password"
-            type="password"
-            class="form-control"
-            [class.is-invalid]="submitted && f['password'].invalid"
-            placeholder="At least 8 characters"
-            autocomplete="new-password"
-            formControlName="password"
-          />
-          <div class="invalid-feedback">Password must be between 8 and 72 characters.</div>
+          <div class="auth__pw">
+            <input
+              id="password"
+              [type]="showPassword ? 'text' : 'password'"
+              class="form-control"
+              [class.is-invalid]="submitted && f['password'].invalid"
+              placeholder="At least 8 characters"
+              autocomplete="new-password"
+              formControlName="password"
+            />
+            <button
+              type="button"
+              class="auth__eye"
+              [attr.aria-pressed]="showPassword"
+              [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+              (click)="showPassword = !showPassword"
+            >
+              <i class="bi" [class.bi-eye]="!showPassword" [class.bi-eye-slash]="showPassword" aria-hidden="true"></i>
+            </button>
+            <div class="invalid-feedback"><span>Password must be between 8 and 72 characters.</span></div>
+          </div>
+          <!-- decorative only: a rough read of what has been typed; the validators decide -->
+          <div class="meter" aria-hidden="true">
+            @for (step of meterSteps; track step) {
+              <i [class.is-on]="strength >= step"></i>
+            }
+          </div>
         </div>
 
+        <!-- both labels share one grid cell (stable width); only the visible one is read out -->
         <button type="submit" class="btn-cwm btn-cwm--broth auth__submit" [disabled]="loading">
-          {{ loading ? 'Registering…' : 'Register' }}
+          <span class="auth__go" [class.is-on]="!loading">Register</span>
+          <span class="auth__go" [class.is-on]="loading">
+            <span class="loader" [class.loader--still]="!loading" aria-hidden="true"></span>
+            Registering…
+          </span>
         </button>
 
       </form>

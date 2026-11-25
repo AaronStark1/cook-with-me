@@ -59,7 +59,10 @@
         } @else {
 
           @if (successMessage) {
-            <div class="alert alert-success" role="status">{{ successMessage }}</div>
+            <div class="alert alert-success contact__sent" role="status">
+              {{ successMessage }}
+              <app-stamp text="Sent" />
+            </div>
           }
           @if (errorMessage) {
             <div class="alert alert-danger" role="alert">{{ errorMessage }}</div>

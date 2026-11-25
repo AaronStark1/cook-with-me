@@ -1,5 +1,5 @@
-<a class="tile" [routerLink]="['/view-recipe', recipe()._id]">
-  <span class="tile__photo photo">
+<a class="tile" [routerLink]="['/view-recipe', recipe()._id]" [state]="{ recipe: recipe() }" (click)="arm(photo)">
+  <span #photo class="tile__photo photo">
     <img
       appImgFallback
       [src]="recipe().image || plate"
@@ -10,10 +10,12 @@
     @if (numeral()) {
       <span class="tile__numeral numeral" aria-hidden="true">{{ numeral() }}</span>
     }
+    <!-- decorative: the link's name is the title + metadata below -->
+    <span class="tile__band" aria-hidden="true">Cook this <i class="bi bi-arrow-right"></i></span>
   </span>
 
   <span class="tile__body">
-    <span class="tile__title display-xs">{{ recipe().name }}</span>
+    <span class="tile__title display-xs">@for (part of title(); track $index) {@if (part.hit) {<mark>{{ part.text }}</mark>} @else {{{ part.text }}}}</span>
     @if (meta().length) {
       <span class="tile__meta label">{{ meta().join(' · ') }}</span>
     }

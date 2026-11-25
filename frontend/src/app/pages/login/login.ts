@@ -3,11 +3,12 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Apiservice } from '../../services/apiservice';
 import { AuthService } from '../../services/auth';
+import { PlatterDrift, ShakeInvalid } from '../auth/auth-motion';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, PlatterDrift, ShakeInvalid],
   templateUrl: './login.html',
   styleUrls: ['../auth/auth.css', './login.css']
 })
@@ -17,6 +18,8 @@ export class Login {
   loading = false;
   errorMessage = '';
   justRegistered = false;
+  /** Presentation only: flips the password input between `password` and `text`. */
+  showPassword = false;
 
   constructor(
     private fb: FormBuilder,

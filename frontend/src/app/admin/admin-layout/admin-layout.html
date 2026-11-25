@@ -25,7 +25,7 @@
     <nav id="admin-nav" class="admin__nav" [class.is-open]="navOpen()" aria-label="Admin">
       <p class="admin__who label">Signed in as {{ auth.user()?.username || 'admin' }}</p>
 
-      <ul>
+      <ul #navList>
         <li>
           <a routerLink="/admin" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }" ariaCurrentWhenActive="page">
             <i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard

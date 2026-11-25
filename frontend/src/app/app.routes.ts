@@ -1,14 +1,8 @@
 import { Routes } from '@angular/router';
 import { Home } from './pages/home/home';
-import { AllRecipes } from './pages/all-recipes/all-recipes';
-import { About } from './pages/about/about';
-import { Contact } from './pages/contact/contact';
-import { SavedRecipes } from './pages/saved-recipes/saved-recipes';
-import { Login } from './pages/login/login';
-import { Register } from './pages/register/register';
-import { Profile } from './pages/profile/profile';
 import { adminGuard, authGuard } from './guards/auth-guard';
 
+// Only the shell and the home page ship in the initial bundle; every other route is its own chunk.
 export const routes: Routes = [
   {
     path: 'admin',
@@ -17,13 +11,27 @@ export const routes: Routes = [
     loadChildren: () => import('./admin/admin-module').then(m => m.AdminModule)
   },
   { path: '', title: 'Cook With Me — good food, your way', component: Home },
-  { path: 'all-recipes', title: 'Recipes', component: AllRecipes },
-  { path: 'about', title: 'About', component: About },
-  { path: 'contact', title: 'Contact', component: Contact },
-  { path: 'saved-recipes', title: 'My collection', component: SavedRecipes, canActivate: [authGuard] },
-  { path: 'login', title: 'Log in', component: Login },
-  { path: 'register', title: 'Join', component: Register },
-  { path: 'profile', title: 'Profile', component: Profile, canActivate: [authGuard] },
+  {
+    path: 'all-recipes',
+    title: 'Recipes',
+    loadComponent: () => import('./pages/all-recipes/all-recipes').then(m => m.AllRecipes)
+  },
+  { path: 'about', title: 'About', loadComponent: () => import('./pages/about/about').then(m => m.About) },
+  { path: 'contact', title: 'Contact', loadComponent: () => import('./pages/contact/contact').then(m => m.Contact) },
+  {
+    path: 'saved-recipes',
+    title: 'My collection',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/saved-recipes/saved-recipes').then(m => m.SavedRecipes)
+  },
+  { path: 'login', title: 'Log in', loadComponent: () => import('./pages/login/login').then(m => m.Login) },
+  { path: 'register', title: 'Join', loadComponent: () => import('./pages/register/register').then(m => m.Register) },
+  {
+    path: 'profile',
+    title: 'Profile',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/profile/profile').then(m => m.Profile)
+  },
   {
     path: 'view-recipe/:id',
     title: 'Recipe',

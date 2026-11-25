@@ -38,7 +38,7 @@
   position: absolute;
   inset: 16%;
   border-radius: 50%;
-  border: var(--rule) solid var(--paper);
+  border: var(--rule) dashed var(--paper); /* dashed, so the platter's scroll-linked turn is visible */
 }
 
 /* ---- Story: oversized numeral beside the copy ---- */
@@ -152,4 +152,54 @@
 
 .cta h2 {
   max-width: 22ch;
+}
+
+/* ---- Motion: the story numeral slides in from the left; the step numerals slide up as their columns rise ---- */
+.story__n.rv {
+  opacity: 0;
+  translate: -3rem 0;
+  transition: opacity var(--dur-reveal) var(--ease-arrive), translate var(--dur-reveal) var(--ease-arrive);
+}
+
+.story__n.rv.is-in {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.how.rv {
+  --rv-step: 90ms;
+}
+
+.how.rv .how__n {
+  display: inline-block;
+  translate: 0 60%;
+  transition: translate var(--dur-reveal) var(--ease-arrive) calc(var(--i, 0) * 90ms + 80ms);
+}
+
+.how.rv.is-in .how__n {
+  translate: 0 0;
+}
+
+/* the hero platter drifts and turns with the scroll (static where scroll timelines are missing) */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .about-hero__platter {
+      animation: about-platter linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 0 120vh;
+    }
+  }
+}
+
+@keyframes about-platter {
+  to { translate: 0 18%; rotate: 70deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story__n.rv,
+  .how.rv .how__n {
+    opacity: 1;
+    translate: none;
+    transition: none;
+  }
 }

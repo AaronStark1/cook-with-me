@@ -104,6 +104,44 @@
   margin-bottom: 1.1rem;
 }
 
+/* focus keeps the global ring (outline + 2px broth) and adds a hard yolk offset beyond it */
+.form-control {
+  transition: box-shadow var(--dur-micro) var(--ease);
+}
+
+.form-control:focus {
+  position: relative; /* above the message block below, so the offset is whole */
+  z-index: 1;
+  border-color: var(--broth); /* an invalid field keeps the brand border while focused */
+  box-shadow: var(--mark, 0 0 transparent), 0 0 0 2px var(--broth), 4px 4px 0 5px var(--yolk);
+}
+
+.form-control.is-invalid {
+  --mark: inset 6px 0 0 var(--paper);
+}
+
+/* a little more room on top, so a focused field's ring and offset never touch the words */
+.contact__field .invalid-feedback {
+  padding-top: 0.55rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .form-control {
+    transition: none;
+  }
+}
+
+/* the "SENT" stamp sits on the success message's top-right corner, clear of the words */
+.contact__sent {
+  position: relative;
+}
+
+.contact__sent app-stamp {
+  left: auto;
+  right: 3.5rem;
+  top: -0.6rem;
+}
+
 .contact__agree {
   flex-wrap: wrap; /* lets the validation message drop onto its own row */
   margin-bottom: 1.25rem;

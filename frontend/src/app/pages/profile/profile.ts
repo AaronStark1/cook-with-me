@@ -4,11 +4,13 @@ import { RouterLink } from '@angular/router';
 import { Apiservice } from '../../services/apiservice';
 import { AuthService } from '../../services/auth';
 import { ImgFallback, PLATE_SRC } from '../../directives/img-fallback';
+import { Stamp } from '../../components/stamp/stamp';
+import { Reveal } from '../../motion/reveal';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink, ImgFallback],
+  imports: [ReactiveFormsModule, RouterLink, ImgFallback, Stamp, Reveal],
   templateUrl: './profile.html',
   styleUrl: './profile.css'
 })

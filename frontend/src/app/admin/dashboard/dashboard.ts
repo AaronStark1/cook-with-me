@@ -3,10 +3,12 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { Observable, catchError, forkJoin, of } from 'rxjs';
 import { Apiservice } from '../../services/apiservice';
+import { Reveal } from '../../motion/reveal';
+import { StatCount } from './stat-count';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink],
+  imports: [RouterLink, Reveal, StatCount],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })

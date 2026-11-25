@@ -45,9 +45,9 @@
           </tr>
         </thead>
 
-        <tbody>
+        <tbody appRowsIn>
           @for (recipe of recipes | search: searchKey; track recipe._id; let i = $index) {
-            <tr>
+            <tr [class.is-leaving]="leaving.has(recipe._id)">
               <td class="num">{{ i + 1 }}</td>
               <td class="fw-semibold">{{ recipe.name }}</td>
               <td>

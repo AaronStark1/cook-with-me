@@ -1,39 +1,56 @@
 <app-hero-carousel [recipes]="featured" />
 
-<!-- EDITORIAL STRIP -->
+<!-- EDITORIAL STRIP: a marquee that follows the scroll; the static strip under reduced motion -->
 <section class="strip band band--broth band--rule-top" aria-label="Discover, save, cook">
-  <div class="wrap strip__inner">
-    <p class="strip__word display">Discover</p>
-    <span class="strip__mark" aria-hidden="true"></span>
-    <p class="strip__word display">Save</p>
-    <span class="strip__mark" aria-hidden="true"></span>
-    <p class="strip__word display">Cook</p>
-  </div>
+  <app-marquee />
 </section>
+
+<!-- THE ASSEMBLY DEMO: lazy, in a slot that already has its final height (no layout shift).
+     With no eligible recipe there is no slot at all. -->
+@if (showcase.length) {
+  <div class="demo-slot" [style.--n]="showcase.length">
+    @defer (on viewport; prefetch on idle) {
+      <app-assembly-demo [recipes]="showcase" />
+    } @placeholder {
+      <div class="demo-slot__placeholder" aria-hidden="true"></div>
+    }
+  </div>
+}
 
 <!-- POPULAR RECIPES -->
 <section class="band band--cream recipes" aria-labelledby="home-recipes-title">
   <div class="wrap">
 
-    <div class="section-head">
+    <div class="section-head" appReveal="rule">
       <div>
         <p class="kicker">Popular recipes</p>
-        <h2 id="home-recipes-title" class="display-lg">Cook this week</h2>
-        <p class="lede muted">Start with something good. Open a recipe, save it, and cook it tonight.</p>
+        <h2 id="home-recipes-title" class="display-lg" appReveal="mask">Cook this week</h2>
+        <p class="lede muted" appReveal="rise" [revealDelay]="120">Start with something good. Open a recipe, save it, and cook it tonight.</p>
       </div>
       <a routerLink="/all-recipes" class="btn-cwm btn-cwm--ghost">View all recipes <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      <span class="section-head__rule rv-rule" aria-hidden="true"></span>
     </div>
 
     @if (recipesLoading) {
 
-      <div class="state" role="status">
-        <span class="loader" aria-hidden="true"></span>
-        <p class="state__text">Loading recipes…</p>
+      <!-- skeleton tiles hold the grid's shape; the status text is for assistive tech -->
+      <div role="status">
+        <p class="visually-hidden">Loading recipes…</p>
+        <ul class="recipes__grid" aria-hidden="true">
+          @for (i of skeletons; track i) {
+            <li class="skeleton-tile">
+              <span class="skeleton skeleton--photo"></span>
+              <span class="skeleton skeleton--line"></span>
+              <span class="skeleton skeleton--short"></span>
+            </li>
+          }
+        </ul>
       </div>
 
     } @else if (recipesError) {
 
-      <div class="state" role="alert">
+      <div class="state state--plate" role="alert">
+        <span class="loader loader--still" aria-hidden="true"></span>
         <p class="state__title">We couldn't load recipes</p>
         <p class="state__text">Something went wrong while fetching the recipe library.</p>
         <button type="button" class="btn-cwm btn-cwm--broth" (click)="getRecipes()">Try again</button>
@@ -41,7 +58,8 @@
 
     } @else if (!tiles.length) {
 
-      <div class="state">
+      <div class="state state--plate">
+        <span class="loader loader--still" aria-hidden="true"></span>
         <p class="state__title">No recipes yet</p>
         <p class="state__text">New recipes will appear here as soon as they are added.</p>
       </div>
@@ -50,7 +68,7 @@
 
       <ul class="recipes__grid">
         @for (recipe of tiles; track recipe._id; let i = $index) {
-          <li><app-recipe-tile [recipe]="recipe" [index]="i" /></li>
+          <li><app-recipe-tile appReveal="tile batch" [recipe]="recipe" [index]="i" /></li>
         }
       </ul>
 
@@ -63,12 +81,12 @@
 <section class="band band--paper voices" aria-labelledby="voices-title">
   <div class="wrap">
 
-    <p class="kicker">Testimonials</p>
-    <h2 id="voices-title" class="display-lg voices__title">What our users say</h2>
+    <p class="kicker" appReveal="rule">Testimonials</p>
+    <h2 id="voices-title" class="display-lg voices__title" appReveal="mask">What our users say</h2>
 
     @if (approvedTestimonies.length) {
 
-      <div class="voices__grid">
+      <div class="voices__grid" appReveal="rise stagger">
         @for (item of approvedTestimonies; track item._id) {
           <figure class="quote">
             <span class="quote__mark display" aria-hidden="true">&ldquo;</span>
@@ -85,7 +103,7 @@
 
     } @else {
 
-      <div class="voices__empty">
+      <div class="voices__empty" appReveal="rise">
         <p class="lede">Cooked something from the library? Be the first to share what you thought.</p>
         <a routerLink="/contact" class="btn-cwm">Share a testimony</a>
       </div>
@@ -99,8 +117,8 @@
 <section class="band band--yolk cta" aria-labelledby="home-cta-title">
   <div class="wrap cta__inner">
     <div>
-      <h2 id="home-cta-title" class="display-lg">Ready to start cooking?</h2>
-      <p class="lede cta__lede">Join and keep every recipe you love in one place.</p>
+      <h2 id="home-cta-title" class="display-lg" appReveal="mask">Ready to start cooking?</h2>
+      <p class="lede cta__lede" appReveal="rise" [revealDelay]="120">Join and keep every recipe you love in one place.</p>
     </div>
     <a
       [routerLink]="auth.isLoggedIn() ? '/all-recipes' : '/register'"

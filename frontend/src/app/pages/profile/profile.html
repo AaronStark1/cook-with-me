@@ -3,7 +3,7 @@
 
     <!-- HEAD: avatar block + name -->
     <header class="profile__head">
-      <div class="profile__avatar" aria-hidden="true">{{ initial }}</div>
+      <div class="profile__avatar" aria-hidden="true"><span class="profile__initial">{{ initial }}</span></div>
       <div>
         <p class="kicker">Your account</p>
         <h1 id="profile-title" class="profile__title">Your Profile</h1>
@@ -23,6 +23,9 @@
         @if (message) {
           <div [class]="'alert alert-' + message.type" [attr.role]="message.type === 'danger' ? 'alert' : 'status'">
             {{ message.text }}
+            @if (message.type === 'success') {
+              <app-stamp text="Updated" />
+            }
           </div>
         }
 
@@ -101,7 +104,7 @@
 
         } @else {
 
-          <ul class="downloads">
+          <ul class="downloads" appReveal="rise stagger">
             @for (recipe of downloadedRecipes; track recipe._id) {
               <li class="downloads__row">
 

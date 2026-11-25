@@ -6,26 +6,26 @@
 </header>
 
 <!-- KEY NUMBERS -->
-<section class="stats" aria-label="Key numbers" [attr.aria-busy]="loading">
+<section class="stats" appReveal="rise stagger" aria-label="Key numbers" [attr.aria-busy]="loading">
 
   <div class="stat stat--paper">
     <p class="label">USERS</p>
-    <p class="stat__value">{{ users ?? '—' }}</p>
+    <p class="stat__value" [appStatCount]="users">{{ users ?? '—' }}</p>
   </div>
 
   <div class="stat stat--yolk">
     <p class="label">RECIPES</p>
-    <p class="stat__value">{{ recipes ?? '—' }}</p>
+    <p class="stat__value" [appStatCount]="recipes" [countDelay]="60">{{ recipes ?? '—' }}</p>
   </div>
 
   <div class="stat stat--broth">
     <p class="label">DOWNLOADS</p>
-    <p class="stat__value">{{ downloads ?? '—' }}</p>
+    <p class="stat__value" [appStatCount]="downloads" [countDelay]="120">{{ downloads ?? '—' }}</p>
   </div>
 
   <a class="stat stat--surface" routerLink="/admin/requestlist">
     <p class="label">PENDING REQUESTS</p>
-    <p class="stat__value">{{ pendingRequests ?? '—' }}</p>
+    <p class="stat__value" [appStatCount]="pendingRequests" [countDelay]="180">{{ pendingRequests ?? '—' }}</p>
     <span class="stat__more label">Review requests →</span>
   </a>
 

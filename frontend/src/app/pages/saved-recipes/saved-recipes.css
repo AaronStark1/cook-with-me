@@ -25,11 +25,39 @@
 }
 
 .saved__count {
+  gap: 0.4em;
   margin: 0;
 }
 
 .saved__empty {
   border: var(--rule) solid var(--ink);
+}
+
+/* An empty plate, drawn like the plate loader; `.plate-rock` (motion.css) rocks it once. */
+.saved__plate {
+  position: relative;
+  display: inline-block;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin-bottom: 1.25rem;
+  background: var(--ink);
+  border: 2px solid var(--broth);
+  border-radius: 50%;
+}
+
+.saved__plate::before,
+.saved__plate::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 3px dashed var(--broth);
+  border-radius: 50%;
+}
+
+.saved__plate::after {
+  inset: 32%;
+  background: var(--yolk);
+  border: 2px solid var(--broth);
 }
 
 /* ---- Tile grid: room around each tile for the hard yolk offset ---- */
@@ -40,6 +68,7 @@
   margin: 0;
   padding: 0 12px 12px 0;
   list-style: none;
+  position: relative; /* appFlip pins a removed tile here while it wipes out */
 }
 
 .tile {

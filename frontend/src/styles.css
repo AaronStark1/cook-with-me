@@ -512,25 +512,9 @@ textarea.form-control {
   margin: 0 auto 1.5rem;
 }
 
-.loader {
-  display: inline-block;
-  width: 2.75rem;
-  height: 2.75rem;
-  border: 5px solid currentColor;
-  border-right-color: transparent;
-  border-radius: 50%;
-  animation: cwm-spin 0.9s linear infinite;
-}
-
+/* the plate loader itself (`.loader`) lives in motion.css */
 @keyframes cwm-spin {
   to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .loader {
-    animation: none;
-    border-right-color: currentColor;
-  }
 }
 
 /* Bootstrap-compatible helper kept for screen-reader-only text */

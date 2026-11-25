@@ -36,7 +36,7 @@
           </tr>
         </thead>
 
-        <tbody>
+        <tbody appRowsIn>
           @for (user of users; track user._id; let i = $index) {
             <tr>
               <td class="num">{{ i + 1 }}</td>

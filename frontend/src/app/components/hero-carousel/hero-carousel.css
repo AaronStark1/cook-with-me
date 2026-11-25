@@ -10,8 +10,9 @@
    remaining dishes sit on the same circle, mostly clipped by the hero edge so
    they only "peek in".
 
-   Stacking (inside .hero's isolated context):
-     0 colour field · 1 platter · 2 poster type · 3+ dishes · 30 info/controls
+   The depth stack (platter, ghost word, dishes, garnish, props) is drawn by
+   <app-hero-stage>; the yolk info block and the controls by <app-hero-info>.
+   Both read the custom properties defined here.
    ========================================================================== */
 
 :host {
@@ -19,7 +20,10 @@
 }
 
 .hero {
-  --dur: 1.15s;
+  /* one gesture: the wheel turns on the wipe's clock. Its curve is the wipe's cubic form —
+     the measured linear() curve covers 58 % of the travel in 70 ms, which reads as a hard
+     edge on a colour panel but as a jump cut on a heavy plate */
+  --dur: var(--dur-wipe-hero);
   --wheel-ease: cubic-bezier(0.65, 0.02, 0.2, 1);
 
   position: relative;
@@ -36,32 +40,61 @@
   grid-area: 1 / 1;
 }
 
-/* ---- Colour field: stacked layers crossfaded by opacity ---- */
+/* ---- Colour field: the active colour underneath, the previous one sliding off above it ---- */
 .hero__field {
   position: absolute;
   inset: 0;
   z-index: 0;
+  overflow: hidden;
 }
 
-.hero__field-layer {
+.hero__field-layer,
+.hero__sweep {
   position: absolute;
   inset: 0;
-  opacity: 0;
-  transition: opacity 0.9s ease;
+  visibility: hidden;
 }
 
-.hero__field-layer.is-on {
-  opacity: 1;
+.hero__field-layer.is-on,
+.hero__sweep.is-on {
+  visibility: visible;
+}
+
+/* the wipe: the old colour as one panel, with a hard 6px yolk stripe as its leading edge */
+.hero__sweep {
+  z-index: 1;
+}
+
+.hero__sweep::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  width: 6px;
+  background: var(--yolk);
+}
+
+.hero__sweep.is-back::after {
+  left: auto;
+  right: 100%;
 }
 
 /* ---- Poster type ---- */
+/* above the stage's travelling layers (ghost word, garnish, props), so nothing ever
+   passes in front of live text; below the info block and controls */
 .hero__type {
   position: relative;
-  z-index: 2;
+  z-index: 27;
   align-self: start;
   max-width: 66cqw;
   /* bottom padding reserves the strip the yolk info block occupies */
   padding: clamp(1.75rem, 3.4cqw, 3.25rem) var(--gutter) 20rem;
+  pointer-events: none;
+}
+
+.hero__type a {
+  pointer-events: auto;
 }
 
 .hero__title {
@@ -73,6 +106,10 @@
 .hero__line {
   display: block;
   white-space: nowrap;
+}
+
+.hero__line > span {
+  display: inline-block;
 }
 
 .hero__line > span + span {
@@ -90,7 +127,7 @@
   gap: 0.75rem;
 }
 
-/* ---- Carousel layer overlays the whole poster; only its controls take pointer events ---- */
+/* ---- Carousel layer overlays the whole poster; only the platter and its controls take pointer events ---- */
 .hero__carousel {
   --D: 30cqw;
   --R: 31cqw;
@@ -101,208 +138,6 @@
   position: relative;
   min-height: max(36rem, 50cqw);
   pointer-events: none;
-}
-
-.hero__dishes {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-
-/* top-down tabletop: a broth disc centred on the wheel */
-.hero__disc {
-  position: absolute;
-  z-index: 1;
-  width: calc(var(--rim) * 2);
-  height: calc(var(--rim) * 2);
-  left: calc(var(--ax) - var(--rim));
-  top: calc(var(--ay) + var(--R) - var(--rim));
-  border-radius: 50%;
-  background: var(--broth);
-}
-
-.hero__rotor {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  transform: rotate(var(--wheel, 0deg));
-  transition: transform var(--dur) var(--wheel-ease);
-}
-
-/* concentric rules; the dashed one makes the platter's rotation visible */
-.hero__ring {
-  position: absolute;
-  border-radius: 50%;
-}
-
-.hero__ring--a { inset: 2.2%; border: 2px solid color-mix(in srgb, var(--ink) 40%, transparent); }
-.hero__ring--b { inset: 7%; border: 5px dashed var(--yolk); }
-.hero__ring--c { inset: 16%; border: 2px solid color-mix(in srgb, var(--ink) 25%, transparent); }
-
-/* ---- Dishes ---- */
-.dish {
-  position: absolute;
-  width: var(--D);
-  height: var(--D);
-  left: calc(var(--ax) - var(--D) / 2);
-  top: calc(var(--ay) + var(--R) - var(--D) / 2);
-  border-radius: 50%;
-  /* ride the ring: rotate out, move up the radius, counter-rotate to stay upright */
-  transform: rotate(var(--theta, 0deg)) translateY(calc(var(--R) * -1)) rotate(calc(var(--theta, 0deg) * -1)) scale(var(--s, 1));
-  transition: transform var(--dur) var(--wheel-ease), opacity 0.6s ease;
-  will-change: transform;
-  box-shadow: 0 1.6cqw 2.6cqw color-mix(in srgb, var(--broth) 55%, transparent);
-}
-
-.dish__img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  object-fit: cover;
-  /* the cream plate rim reads as a consistent "cut-out" edge on every photo */
-  border: 0.8cqw solid var(--ink);
-  background: var(--ink);
-}
-
-.dish__link {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  pointer-events: auto;
-  cursor: pointer;
-}
-
-.dish--static {
-  --theta: 0deg;
-  --s: 1;
-}
-
-/* ---- Active recipe info (yolk block) ---- */
-.hero__info {
-  position: absolute;
-  left: var(--gutter);
-  bottom: clamp(1.25rem, 3cqw, 2.5rem);
-  z-index: 30;
-  width: min(25rem, 36cqw);
-  padding: 1.15rem 1.3rem 1.35rem;
-  background: var(--yolk);
-  color: var(--broth);
-  border: var(--rule) solid var(--broth);
-  pointer-events: auto;
-}
-
-.hero__info-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.7rem;
-}
-
-.hero__info-inner--a { animation: hero-rise-a 0.5s var(--ease) both; }
-.hero__info-inner--b { animation: hero-rise-b 0.5s var(--ease) both; }
-
-.hero__count {
-  margin: 0;
-}
-
-.hero__count-n {
-  margin-left: 0.45rem;
-  font-size: 1.25rem;
-  vertical-align: -0.1em;
-}
-
-.hero__recipe {
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.hero__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-@keyframes hero-rise-a {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes hero-rise-b {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: none; }
-}
-
-/* ---- Controls: a solid broth bar, legible over any field colour ---- */
-.hero__controls {
-  position: absolute;
-  right: var(--gutter);
-  bottom: clamp(1.25rem, 3cqw, 2.5rem);
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.4rem;
-  background: var(--broth);
-  border: var(--rule) solid var(--ink);
-  pointer-events: auto;
-}
-
-.ctl {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  font-size: 1.15rem;
-  line-height: 1;
-  color: var(--broth);
-  background: var(--ink);
-  border: 2px solid var(--ink);
-  cursor: pointer;
-}
-
-.ctl:hover {
-  background: var(--yolk);
-  border-color: var(--yolk);
-}
-
-.dots {
-  display: flex;
-  margin: 0 0.25rem;
-  padding: 0;
-  list-style: none;
-}
-
-.dot {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 48px;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-}
-
-.dot span {
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--ink);
-  background: transparent;
-  transition: background-color 0.2s, border-color 0.2s;
-}
-
-.dot:hover span {
-  background: var(--muted);
-}
-
-.dot[aria-current='true'] span {
-  background: var(--yolk);
-  border-color: var(--yolk);
 }
 
 /* ==========================================================================
@@ -345,73 +180,6 @@
     --rim: calc(var(--R) + var(--D) * 0.42);
 
     min-height: 0;
-    padding-bottom: 1.5rem;
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
   }
-
-  .hero__dishes {
-    position: relative;
-    inset: auto;
-    height: 82cqw;
-  }
-
-  .hero__info,
-  .hero__controls {
-    position: relative;
-    inset: auto;
-    width: auto;
-    margin: 1.25rem var(--gutter) 0;
-  }
-
-  .hero__controls {
-    flex-wrap: wrap;
-    justify-content: space-between;
-    margin-top: 1rem;
-  }
-
-  .dots {
-    order: 3;
-    flex: 1 0 100%;
-    justify-content: center;
-    margin: 0;
-  }
-}
-
-/* ==========================================================================
-   Reduced motion: no rotation, no springs, no colour interpolation. The active
-   recipe is stable and manual changes are immediate (a short fade at most).
-   ========================================================================== */
-@media (prefers-reduced-motion: reduce) {
-  .dish,
-  .hero__rotor {
-    transition: opacity 0.2s linear;
-  }
-
-  .hero__rotor {
-    transition: none;
-  }
-
-  .hero__field-layer,
-  .dot span {
-    transition: none;
-  }
-
-  .hero__info-inner--a,
-  .hero__info-inner--b {
-    animation: none;
-  }
-}
-
-.hero.is-reduced .dish,
-.hero.is-reduced .hero__rotor {
-  transition: opacity 0.2s linear;
-}
-
-.hero.is-reduced .hero__rotor,
-.hero.is-reduced .hero__field-layer {
-  transition: none;
-}
-
-.hero.is-reduced .hero__info-inner--a,
-.hero.is-reduced .hero__info-inner--b {
-  animation: none;
 }

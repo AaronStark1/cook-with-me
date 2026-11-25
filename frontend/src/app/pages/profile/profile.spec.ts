@@ -99,4 +99,47 @@ describe('Profile', () => {
     fixture.detectChanges();
     expect(el.querySelector('.profile__alert')?.textContent).toContain('Could not load your downloads');
   });
+
+  it('stamps "Updated" on the success message only, and keeps the message in text', () => {
+    http.expectOne(downloadsUrl).flush([]);
+    fixture.detectChanges();
+    expect(el.querySelector('app-stamp')).toBeNull();
+
+    component.updateProfile();
+    http.expectOne(`${environment.apiUrl}/api/updateProfile`)
+      .flush({ user: { username: 'chef', email: 'chef@example.com', role: 'User' } });
+    fixture.detectChanges();
+
+    const alert = el.querySelector('.profile__panel .alert-success') as HTMLElement;
+    expect(alert.getAttribute('role')).toBe('status');
+    expect(alert.textContent).toContain('Profile updated.');
+    const stamp = alert.querySelector('app-stamp') as HTMLElement;
+    expect(stamp.textContent).toContain('Updated');
+    expect(stamp.getAttribute('aria-hidden')).toBe('true');
+
+    component.updateProfile();
+    http.expectOne(`${environment.apiUrl}/api/updateProfile`)
+      .flush({ message: 'Email already in use' }, { status: 409, statusText: 'Conflict' });
+    fixture.detectChanges();
+
+    expect(el.querySelector('.alert-danger')?.textContent).toContain('Email already in use');
+    expect(el.querySelector('app-stamp')).toBeNull();
+  });
+
+  it('shows every download row in full when motion is reduced', () => {
+    spyOn(window, 'matchMedia').and.returnValue({ matches: true, addEventListener() {}, removeEventListener() {} } as unknown as MediaQueryList);
+    http.expectOne(downloadsUrl).flush([]);
+    const reduced = TestBed.createComponent(Profile);
+    reduced.detectChanges();
+    http.expectOne(downloadsUrl).flush([
+      { _id: 'd1', recipeId: 'r1', name: 'Pad Thai', image: '' },
+      { _id: 'd2', recipeId: 'r2', name: 'Carbonara', image: '' },
+    ]);
+    reduced.detectChanges();
+
+    const list = reduced.nativeElement.querySelector('.downloads') as HTMLElement;
+    expect(list.classList).not.toContain('rv');
+    expect(list.querySelectorAll('.downloads__row').length).toBe(2);
+    list.querySelectorAll<HTMLElement>('.downloads__row').forEach((row) => expect(getComputedStyle(row).opacity).toBe('1'));
+  });
 });

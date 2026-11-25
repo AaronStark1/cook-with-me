@@ -2,32 +2,28 @@
   display: block;
 }
 
-/* ---- Editorial strip: three oversized words split by yolk squares ---- */
+/* ---- Editorial strip: three oversized words split by yolk squares (drawn by <app-marquee>) ---- */
 .strip {
   padding-block: clamp(1.25rem, 3vw, 2.25rem);
   border-top: var(--rule) solid var(--ink);
 }
 
-.strip__inner {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: clamp(0.5rem, 3vw, 2.5rem);
+/* ---- Assembly Demo slot: reserves the demo's exact height before the lazy chunk arrives.
+        The media query is SCROLL_QUERY in motion/assembly-timeline.ts — keep the two identical. ---- */
+.demo-slot {
+  display: block;
+  height: clamp(40rem, calc(100svh - var(--header-h)), 46rem);
+  background: var(--broth);
 }
 
-/* three words + two marks always share one line: sized from the viewport, not the container */
-.strip__word {
-  margin: 0;
-  font-size: clamp(0.9rem, 5.2vw, 5.25rem);
-  line-height: 1;
+@media (min-width: 1024px) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .demo-slot {
+    height: calc(var(--n, 1) * 160svh);
+  }
 }
 
-.strip__mark {
-  flex: none;
-  width: clamp(0.8rem, 2vw, 1.5rem);
-  height: clamp(0.8rem, 2vw, 1.5rem);
-  background: var(--yolk);
+.demo-slot__placeholder {
+  height: 100%;
 }
 
 /* ---- Section head ---- */
@@ -38,8 +34,14 @@
   justify-content: space-between;
   gap: 1.25rem 2rem;
   margin-bottom: clamp(1.75rem, 4vw, 3rem);
-  padding-bottom: 1.5rem;
-  border-bottom: var(--rule) solid currentColor;
+}
+
+/* the head's bottom rule is its own element so it can draw across on reveal */
+.section-head__rule {
+  flex: 0 0 100%;
+  height: var(--rule);
+  margin-top: 0.25rem;
+  background: currentColor;
 }
 
 .section-head .lede {
@@ -77,8 +79,37 @@
   display: flex;
   flex-direction: column;
   margin: 0;
-  padding: 0 0 0 1.25rem;
-  border-left: 6px solid var(--yolk);
+  padding: 0 0 0 calc(1.25rem + 6px);
+}
+
+/* the yolk rule beside each quote grows down as the quote appears */
+.quote::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: var(--yolk);
+  transform-origin: top;
+}
+
+.voices__grid.rv {
+  --rv-step: 90ms;
+}
+
+.voices__grid.rv .quote::before {
+  scale: 1 0;
+  transition: scale 700ms var(--ease-arrive) calc(var(--i, 0) * 90ms + 120ms);
+}
+
+.voices__grid.rv .quote__mark {
+  scale: 0.6;
+  transform-origin: left top;
+  transition: scale 520ms var(--ease-arrive) calc(var(--i, 0) * 90ms + 160ms);
+}
+
+.voices__grid.rv.is-in .quote::before,
+.voices__grid.rv.is-in .quote__mark {
+  scale: 1;
 }
 
 .quote__mark {

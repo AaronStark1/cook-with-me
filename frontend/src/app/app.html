@@ -11,3 +11,8 @@
 @if (!isAdminArea()) {
   <app-footer></app-footer>
 }
+
+<app-toasts />
+
+<!-- route changes are announced here; focus moves to <main> -->
+<p class="visually-hidden" aria-live="polite" aria-atomic="true" id="route-status">{{ announcement() }}</p>

@@ -1,9 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { Apiservice } from '../../services/apiservice';
+import { RowsIn } from '../row-motion';
 
 @Component({
   selector: 'app-users-list',
-  imports: [],
+  imports: [RowsIn],
   templateUrl: './users-list.html',
   styleUrl: './users-list.css',
 })

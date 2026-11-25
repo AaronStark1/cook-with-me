@@ -117,3 +117,148 @@
 .auth__switch a {
   font-weight: 800;
 }
+
+/* ---- Motion: platter ---- */
+.auth__platter {
+  translate: var(--px, 0) var(--py, 0); /* written by appPlatterDrift, 8px at most */
+}
+
+/* a dashed ring between the rim and the solid ring, turning against the clock */
+.auth__platter::after {
+  content: '';
+  position: absolute;
+  inset: 7%;
+  border-radius: 50%;
+  border: var(--rule) dashed var(--paper);
+  animation: auth-turn 60s linear infinite reverse;
+}
+
+@keyframes auth-turn {
+  to { rotate: 360deg; }
+}
+
+/* ---- Motion: fields ---- */
+/* focus keeps the global ring (outline + 2px broth) and adds a hard yolk offset beyond it */
+.form-control {
+  transition: box-shadow var(--dur-micro) var(--ease);
+}
+
+.form-control:focus {
+  position: relative;
+  z-index: 1;
+  border-color: var(--broth); /* an invalid field keeps the brand border while focused */
+  box-shadow: var(--mark, 0 0 transparent), 0 0 0 2px var(--broth), 4px 4px 0 5px var(--yolk);
+}
+
+.form-control.is-invalid {
+  --mark: inset 6px 0 0 var(--paper);
+}
+
+/* the message opens by its grid row, not by height; hidden means hidden to everyone */
+.auth__field .invalid-feedback {
+  display: grid;
+  grid-template-rows: 0fr;
+  padding: 0;
+  visibility: hidden;
+  transition: grid-template-rows var(--dur-ui) var(--ease-arrive), visibility 0s var(--dur-ui);
+}
+
+.auth__field .is-invalid ~ .invalid-feedback {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.invalid-feedback > span {
+  min-height: 0;
+  padding-inline: 0.7rem;
+  overflow: hidden;
+}
+
+.invalid-feedback > span::before,
+.invalid-feedback > span::after {
+  content: '';
+  display: block;
+  height: 0.4rem;
+}
+
+/* a little more room on top, so a focused field's ring and offset never touch the words */
+.invalid-feedback > span::before {
+  height: 0.55rem;
+}
+
+/* ---- Password field with its show/hide button ---- */
+.auth__pw {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 48px;
+}
+
+.auth__pw .invalid-feedback {
+  grid-column: 1 / -1;
+}
+
+.auth__eye {
+  padding: 0;
+  font-size: 1.15rem;
+  color: var(--broth);
+  background: var(--ink);
+  border: 2px solid var(--broth);
+  border-left: 0;
+  cursor: pointer;
+}
+
+.auth__eye:hover {
+  background: var(--yolk);
+}
+
+.auth__eye[aria-pressed='true'] {
+  color: var(--ink);
+  background: var(--broth);
+}
+
+/* ---- Submit: both labels share one cell, so the button never changes width ---- */
+.auth__submit {
+  display: inline-grid;
+  place-items: center;
+}
+
+.auth__go {
+  grid-area: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  visibility: hidden;
+}
+
+.auth__go.is-on {
+  visibility: visible;
+}
+
+.auth__go .loader {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.auth__go .loader::before {
+  inset: 2px;
+  border-width: 2px;
+}
+
+.auth__go .loader::after {
+  border-width: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth__platter {
+    translate: none;
+  }
+
+  .auth__platter::after {
+    animation: none;
+  }
+
+  .form-control,
+  .auth__field .invalid-feedback {
+    transition: none;
+  }
+}

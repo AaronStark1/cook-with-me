@@ -3,10 +3,11 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Apiservice } from '../../services/apiservice';
 import { AuthService } from '../../services/auth';
+import { Stamp } from '../../components/stamp/stamp';
 
 @Component({
   selector: 'app-contact',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, Stamp],
   templateUrl: './contact.html',
   styleUrl: './contact.css',
 })

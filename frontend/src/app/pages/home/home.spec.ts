@@ -79,6 +79,22 @@ describe('Home', () => {
     expect(el().querySelector('a[href="/contact"]')).not.toBeNull();
   });
 
+  it('reserves no Assembly Demo slot when no recipe is eligible for it — no gap, no dead UI', () => {
+    flush([1, 2, 3].map(recipe)); // these records have no ingredients / instructions
+    expect(el().querySelector('.demo-slot')).toBeNull();
+    expect(el().querySelector('app-assembly-demo')).toBeNull();
+  });
+
+  it('reserves the Assembly Demo slot (with its item count) when recipes are eligible', () => {
+    const full = (n: number) => ({ ...recipe(n), cuisine: `C${n}`, ingredients: ['a', 'b', 'c'], instructions: ['x', 'y', 'z'] });
+    flush([1, 2, 3, 4, 5, 6, 7].map(full));
+    const slot = el().querySelector('.demo-slot') as HTMLElement;
+    expect(slot).not.toBeNull();
+    expect(slot.style.getPropertyValue('--n')).toBe('3');
+    // 6 and 7 first (the hero already features 1–5); a hero recipe only fills the last place
+    expect(fixture.componentInstance.showcase.map((r) => r._id)).toEqual(['id6', 'id7', 'id1']);
+  });
+
   it('has the right call to action for guests', () => {
     flush([]);
     expect(el().querySelector('.cta a')!.getAttribute('href')).toBe('/register');

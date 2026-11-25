@@ -1,0 +1,137 @@
+<dialog
+  #dialog
+  class="cook"
+  aria-labelledby="cook-title"
+  (close)="onClose()"
+  (keydown)="onKey($event)"
+>
+  <header class="cook__top">
+    <button type="button" class="cook__btn cook__btn--icon" (click)="close()" aria-label="Close Cook Mode">
+      <i class="bi bi-x-lg" aria-hidden="true"></i>
+    </button>
+
+    <div class="cook__where">
+      <h2 id="cook-title" class="cook__name label"><span class="visually-hidden">Cook Mode: </span>{{ recipe().name }}</h2>
+      @if (!finished()) {
+        <p class="cook__count">
+          <span class="label">Step</span>
+          <app-odometer class="numeral" [value]="index() + 1" [pad]="2" [label]="'Step ' + (index() + 1) + ' of ' + total()" />
+          <span class="numeral cook__of" aria-hidden="true">/ {{ total() < 10 ? '0' : '' }}{{ total() }}</span>
+        </p>
+      } @else {
+        <p class="cook__count"><span class="label">All {{ total() }} steps done</span></p>
+      }
+    </div>
+
+    <!-- progress: done = yolk, current = cream, upcoming = outlined (the count above says the same in text) -->
+    <ol class="cook__dots" aria-hidden="true">
+      @for (i of dots(); track i) {
+        <li [class.is-done]="i < index()" [class.is-current]="i === index()"></li>
+      }
+    </ol>
+  </header>
+
+  <div class="cook__stage" (pointerdown)="onPointerDown($event)" (pointerup)="onPointerUp($event)" (pointercancel)="onPointerCancel()">
+    @for (slot of slotIds; track slot) {
+      @let step = panel(slot);
+      @let shown = slot === active() || slot === leaving();
+      <section
+        class="cook__panel"
+        [attr.data-slot]="slot"
+        [class.is-on]="shown"
+        [class.is-top]="slot === leaving()"
+        [class.is-finish]="step >= total()"
+        [attr.aria-hidden]="slot === active() ? null : 'true'"
+        [attr.inert]="slot === active() ? null : ''"
+      >
+        <div class="cook__field" [style.background-color]="step >= total() ? null : color(step)"></div>
+        <div class="cook__content">
+          <div class="cook__drift">
+            @if (step >= total()) {
+
+              <div class="cook__done">
+                <p class="cook__n cook__nice display">Nice one.<app-stamp text="Done" /></p>
+                <div class="cook__text">
+                  <p class="cook__lede">{{ recipe().name }} is ready. Enjoy it.</p>
+                  <div class="cook__actions">
+                    @if (auth.isLoggedIn()) {
+                      <button type="button" class="btn-cwm" (click)="saveToCollection()" [disabled]="saveState() === 'saving' || saveState() === 'saved'">
+                        <i class="bi" [class.bi-bookmark-heart]="saveState() !== 'saved'" [class.bi-bookmark-check-fill]="saveState() === 'saved'" aria-hidden="true"></i>
+                        {{ saveState() === 'saving' ? 'Saving…' : saveState() === 'saved' ? 'Saved' : 'Save to collection' }}
+                      </button>
+                    } @else {
+                      <a class="btn-cwm" routerLink="/login" [queryParams]="{ returnUrl: '/view-recipe/' + recipeId() }" (click)="close()">
+                        Log in to save
+                      </a>
+                    }
+                    <button type="button" class="btn-cwm btn-cwm--ghost" (click)="close()">Back to recipe</button>
+                  </div>
+                  @if (saveState() === 'saved') {
+                    <p class="cook__note" role="status">Saved to your collection.</p>
+                  } @else if (saveState() === 'already') {
+                    <p class="cook__note" role="status">This recipe is already in your collection.</p>
+                  } @else if (saveState() === 'error') {
+                    <p class="cook__note" role="alert">{{ saveError() }}</p>
+                  }
+                </div>
+              </div>
+
+            } @else {
+
+              <p class="cook__n numeral" aria-hidden="true">{{ step + 1 < 10 ? '0' : '' }}{{ step + 1 }}</p>
+              <p class="cook__text cook__words">{{ steps()[step] }}</p>
+
+            }
+          </div>
+        </div>
+      </section>
+    }
+  </div>
+
+  <!-- ingredients drawer: the same check-offs as the recipe page, kept in step with it -->
+  <aside id="cook-ingredients" class="cook__drawer" [class.is-open]="drawer()" aria-labelledby="cook-ingredients-title" [attr.inert]="drawer() ? null : ''">
+    <div class="cook__drawer-head">
+      <h3 id="cook-ingredients-title" class="display-sm">Ingredients</h3>
+      <button type="button" class="cook__btn cook__btn--icon" (click)="toggleDrawer()" aria-label="Close ingredients">
+        <i class="bi bi-chevron-down" aria-hidden="true"></i>
+      </button>
+    </div>
+    <ul>
+      @for (item of ingredients(); track $index) {
+        <li>
+          <button
+            type="button"
+            class="check"
+            [attr.aria-pressed]="progress.isChecked(recipeId(), 'ingredients', $index)"
+            (click)="progress.toggle(recipeId(), 'ingredients', $index)"
+          >
+            <span class="check__box" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4.5 10.5l3.6 3.6 7.4-8" /></svg></span>
+            <span class="check__text">{{ item }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+  </aside>
+
+  <footer class="cook__bar">
+    <button type="button" class="cook__btn cook__btn--nav" (click)="previous()" [disabled]="index() === 0">
+      <i class="bi bi-arrow-left" aria-hidden="true"></i> <span>Previous</span>
+    </button>
+    @if (ingredients().length) {
+      <button
+        type="button"
+        class="cook__btn cook__btn--mid"
+        (click)="toggleDrawer()"
+        [attr.aria-expanded]="drawer()"
+        aria-controls="cook-ingredients"
+      >
+        <i class="bi bi-list-check" aria-hidden="true"></i> <span>Ingredients</span>
+      </button>
+    }
+    <button type="button" class="cook__btn cook__btn--nav cook__btn--next" (click)="next()" [disabled]="finished()">
+      <span>{{ index() === total() - 1 ? 'Finish' : 'Next' }}</span> <i class="bi bi-arrow-right" aria-hidden="true"></i>
+    </button>
+  </footer>
+
+  <p class="visually-hidden" aria-live="polite" aria-atomic="true">{{ announcement() }}</p>
+</dialog>

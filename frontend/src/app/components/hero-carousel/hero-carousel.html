@@ -3,6 +3,7 @@
   class="hero"
   [class.is-reduced]="reduced()"
   [class.is-static]="!count()"
+  [class.is-idle]="idle()"
   [style.--wheel]="wheel() + 'deg'"
   aria-labelledby="hero-title"
   (pointerenter)="onPointer($event, true)"
@@ -11,27 +12,34 @@
   (focusout)="onFocusOut($event, hero)"
 >
 
-  <!-- Flat colour field. Layers crossfade by opacity only, so the type is never on an in-between colour. -->
+  <!-- Flat colour field. The active colour sits underneath; the previous one leaves on a single
+       panel with a hard yolk edge, so the type is only ever on one flat colour or the other. -->
   <div class="hero__field" aria-hidden="true">
     @for (color of colors; track color; let i = $index) {
       <span class="hero__field-layer" [class.is-on]="i === colorIndex()" [style.background-color]="color"></span>
     }
+    <span
+      class="hero__sweep"
+      [class.is-on]="leavingColor() !== null"
+      [class.is-back]="dir() === -1"
+      [style.background-color]="leavingColor() !== null ? colors[leavingColor()!] : null"
+    ></span>
   </div>
 
   <!-- Poster type -->
   <div class="hero__type">
-    <p class="kicker">Recipes to discover, save &amp; cook</p>
+    <p class="kicker intro-rise" style="--intro-d: 330ms">Recipes to discover, save &amp; cook</p>
 
     <h1 id="hero-title" class="hero__title display">
-      <span class="hero__line"><span>Good</span> <span>food.</span></span>
-      <span class="hero__line"><span>Your</span> <span>way.</span></span>
+      <span class="hero__line"><span class="intro-word" style="--w: 0">Good</span> <span class="intro-word" style="--w: 1">food.</span></span>
+      <span class="hero__line"><span class="intro-word" style="--w: 2">Your</span> <span class="intro-word" style="--w: 3">way.</span></span>
     </h1>
 
-    <p class="hero__lede lede">
+    <p class="hero__lede lede intro-rise" style="--intro-d: 410ms">
       Discover something delicious to cook tonight — approachable recipes you can save, download and make your own.
     </p>
 
-    <div class="hero__cta">
+    <div class="hero__cta intro-rise" style="--intro-d: 490ms">
       <a class="btn-cwm" routerLink="/all-recipes">Explore recipes <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
       @if (auth.isLoggedIn()) {
         <a class="btn-cwm btn-cwm--ghost" routerLink="/saved-recipes">My collection</a>
@@ -49,113 +57,35 @@
     aria-label="Featured recipes"
     (keydown.arrowleft)="advance(-1)"
     (keydown.arrowright)="advance(1)"
+    (keydown.home)="goTo(0); $event.preventDefault()"
+    (keydown.end)="goTo(count() - 1); $event.preventDefault()"
   >
 
-    <div class="hero__dishes">
+    <app-hero-stage
+      [dishes]="dishes()"
+      [empty]="!count()"
+      [recipe]="activeRecipe()"
+      [dir]="dir()"
+      [reduced]="reduced()"
+      [compact]="compact()"
+      [dragging]="dragging()"
+      [duration]="duration"
+    />
 
-      <!-- top-down tabletop / platter (decorative) -->
-      <div class="hero__disc" aria-hidden="true">
-        <div class="hero__rotor">
-          <span class="hero__ring hero__ring--a"></span>
-          <span class="hero__ring hero__ring--b"></span>
-          <span class="hero__ring hero__ring--c"></span>
-        </div>
-      </div>
-
-      @for (dish of dishes(); track dish.slot) {
-        <div
-          class="dish"
-          [class.is-active]="dish.rel === 0"
-          [attr.aria-hidden]="dish.rel === 0 ? null : 'true'"
-          [style.--theta]="dish.theta + 'deg'"
-          [style.--s]="dish.scale"
-          [style.opacity]="dish.opacity"
-          [style.z-index]="dish.z"
-        >
-          <img
-            class="dish__img"
-            appImgFallback
-            [src]="dish.recipe.image || plate"
-            [alt]="dish.rel === 0 ? (dish.recipe.name ?? 'Featured recipe') : ''"
-            width="640"
-            height="640"
-            decoding="async"
-          />
-          @if (dish.rel === 0) {
-            <!-- mouse convenience only: keyboard and screen-reader users use "View recipe" in the info block -->
-            <a class="dish__link" [routerLink]="['/view-recipe', dish.recipe._id]" aria-hidden="true" tabindex="-1"></a>
-          }
-        </div>
-      }
-
-      @if (!count()) {
-        <!-- No recipes yet: a complete static hero — an empty plate, no dead links. -->
-        <div class="dish is-active dish--static" aria-hidden="true">
-          <img class="dish__img" [src]="plate" alt="" width="640" height="640" />
-        </div>
-      }
-
-    </div>
-
-    @if (activeRecipe(); as recipe) {
-      <div class="hero__info">
-        <div class="hero__info-inner" [class]="'hero__info-inner hero__info-inner--' + swap()">
-          <p class="label hero__count">
-            Featured
-            <span class="numeral hero__count-n">{{ pad(activeIndex() + 1) }}</span><span aria-hidden="true">/{{ pad(count()) }}</span>
-          </p>
-          <p class="hero__recipe display display-sm">{{ recipe.name }}</p>
-          @if (meta().length) {
-            <ul class="hero__meta" aria-label="Recipe details">
-              @for (item of meta(); track item) {
-                <li class="tag">{{ item }}</li>
-              }
-            </ul>
-          }
-          <a class="btn-cwm btn-cwm--broth" [routerLink]="['/view-recipe', recipe._id]">
-            View recipe
-            <span class="visually-hidden">: {{ recipe.name }}</span>
-            <i class="bi bi-arrow-right" aria-hidden="true"></i>
-          </a>
-        </div>
-      </div>
-    }
-
-    @if (count() > 1) {
-      <div class="hero__controls">
-        <button type="button" class="ctl" (click)="advance(-1)" aria-label="Previous recipe">
-          <i class="bi bi-arrow-left" aria-hidden="true"></i>
-        </button>
-        <button type="button" class="ctl" (click)="advance(1)" aria-label="Next recipe">
-          <i class="bi bi-arrow-right" aria-hidden="true"></i>
-        </button>
-
-        <ol class="dots" aria-label="Choose a featured recipe">
-          @for (recipe of items(); track recipe._id; let i = $index) {
-            <li>
-              <button
-                type="button"
-                class="dot"
-                [attr.aria-current]="i === activeIndex() ? 'true' : null"
-                [attr.aria-label]="'Show recipe ' + (i + 1) + ' of ' + count() + ': ' + recipe.name"
-                (click)="goTo(i)"
-              ><span aria-hidden="true"></span></button>
-            </li>
-          }
-        </ol>
-
-        @if (!reduced()) {
-          <button
-            type="button"
-            class="ctl"
-            (click)="toggleAutoplay()"
-            [attr.aria-label]="userPaused() ? 'Start automatic rotation' : 'Pause automatic rotation'"
-          >
-            <i class="bi" [class.bi-pause-fill]="!userPaused()" [class.bi-play-fill]="userPaused()" aria-hidden="true"></i>
-          </button>
-        }
-      </div>
-    }
+    <app-hero-info
+      [recipe]="activeRecipe()"
+      [meta]="meta()"
+      [items]="items()"
+      [activeIndex]="activeIndex()"
+      [swap]="swap()"
+      [reduced]="reduced()"
+      [userPaused]="userPaused()"
+      [running]="canAutoplay()"
+      [cycleMs]="cycleMs()"
+      (step)="advance($event)"
+      (pick)="goTo($event)"
+      (toggle)="toggleAutoplay()"
+    />
 
     <p class="visually-hidden" aria-live="polite" aria-atomic="true">{{ announcement() }}</p>
 
