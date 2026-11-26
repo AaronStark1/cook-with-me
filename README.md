@@ -259,16 +259,24 @@ Errors are JSON: `{ "message": "...", "errors": [{ "field", "message" }] }` (the
 
 Each service deploys only after GitHub CI passes (`autoDeployTrigger: checksPass`) and only when its own folder changes. On the free plan the API sleeps after about 15 idle minutes, and the next request waits while it wakes.
 
-**Check `TRUST_PROXY` once it's live.** Render doesn't document how many proxies sit in front of a web service, so the Blueprint sets `1`. Every API response has a `RateLimit` header whose `r=` is the requests left in the current 15-minute window for that visitor:
+**`TRUST_PROXY` is `3` on Render.** Render doesn't document how many proxies sit in front of a web service, so this was measured. Requests pass through three proxies, and the visitor's address is the third entry from the right of `X-Forwarded-For`. With `1`, the rate limiter counted every visitor against a few shared proxy addresses. With `2`, it counted them against a large pool, so nearly every request started a fresh count.
+
+To check it again, run these in a terminal on your own machine. Every API response has a `RateLimit` header whose `r=` is the requests that visitor has left in the current 15-minute window:
 
 ```bash
 API=https://cook-with-me-api.onrender.com
-curl -sI $API/api/allRecipes | grep -i '^ratelimit:'                                    # run twice: r= drops by one
-curl -sI -H 'X-Forwarded-For: 203.0.113.9' $API/api/allRecipes | grep -i '^ratelimit:'  # r= should keep dropping
+curl -4 -sI $API/api/allRecipes | grep -i '^ratelimit:'
+curl -4 -sI $API/api/allRecipes | grep -i '^ratelimit:'
+curl -4 -sI -H 'X-Forwarded-For: 203.0.113.9' $API/api/allRecipes | grep -i '^ratelimit:'
+curl -4 -sI $API/api/allRecipes | grep -i '^ratelimit:'
 ```
 
-- If the second command shows a fresh count (`r=299`), the value is too high: a client can pick its own rate-limit key. Lower it.
-- Then run the first command from another network, such as a phone hotspot. If `r=` carries on from the first network's count instead of starting fresh, every visitor shares one key. Raise it by one.
+`r=` should drop by exactly one on every line, including the third, which fakes a forwarded address.
+
+- If the counts jump around or start over at `r=299` more than once, requests are counted by proxy address and the value is too low. Raise it by one.
+- If only the third line starts a fresh count, a client can pick its own rate-limit key and the value is too high. Lower it by one.
+
+`-4` keeps every request on IPv4, so switching between IPv4 and IPv6 can't look like a different visitor. Counts are kept in memory, so a redeploy or a free-plan sleep empties them; a first `r=299` is normal.
 
 ## Tech Stack
 - **Frontend**: Angular 20, Bootstrap 5, jsPDF (loaded on demand)
