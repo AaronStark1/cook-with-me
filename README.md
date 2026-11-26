@@ -7,7 +7,16 @@
 </p>
 
 <p align="center">
+  <a href="docs/reel/cook-with-me-reel-web.mp4"><img src="docs/reel/cook-with-me-reel-thumb.jpg" width="100%" alt="The Cook With Me reel: GOOD FOOD. YOUR WAY. under the COOK WITH ME wordmark, beside the lazy-Susan platter, with a play button on the featured dish"></a>
+  <br>
+  <b><a href="docs/reel/cook-with-me-reel-web.mp4">▶ Watch the 45-second reel</a></b>
+  <br>
+  <sub>Also in <a href="docs/reel/cook-with-me-reel.mp4">1080p60</a> and <a href="docs/reel/cook-with-me-reel-vertical.mp4">vertical 9:16</a>, with sound</sub>
+</p>
+
+<p align="center">
   <b><a href="#see-it-cook">See it cook</a></b>
+  &nbsp;·&nbsp; <a href="#the-reel">The reel</a>
   &nbsp;·&nbsp; <a href="#screens">Screens</a>
   &nbsp;·&nbsp; <a href="#the-look">The look</a>
   &nbsp;·&nbsp; <a href="#quick-start">Quick start</a>
@@ -42,6 +51,21 @@ Can't decide? **Surprise me** spins a platter of the recipes currently on screen
 <img src="docs/readme/assembly.webp" width="100%" alt="The Assembly Demo on the home page: ingredient labels for Korean Bibimbap fly onto an empty plate, the finished dish appears, the camera tilts around it and the recipe card slides in">
 
 On the home page, the **Assembly Demo** builds a dish from its real ingredient list as you scroll. Each recipe has a single photo, so the camera angles are simulated, and it never claims otherwise.
+
+## The reel
+
+<table>
+  <tr>
+    <td width="64%" valign="top"><a href="docs/reel/cook-with-me-reel-web.mp4"><img src="docs/reel/cook-with-me-reel-thumb.jpg" width="100%" alt="The 16:9 reel's poster: GOOD FOOD. YOUR WAY. under the COOK WITH ME wordmark, beside the lazy-Susan platter, with a play button on the featured dish"></a></td>
+    <td width="36%" valign="top"><a href="docs/reel/cook-with-me-reel-vertical.mp4"><img src="docs/reel/cook-with-me-reel-vertical-cover.jpg" width="100%" alt="The vertical reel's cover: WHAT'S FOR DINNER? above a slice of tiramisu on a plate ringed in cream and dashed yolk"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b><a href="docs/reel/cook-with-me-reel-web.mp4">16:9 web</a></b> · 1280×720, 30 fps, 8.8 MB &nbsp;|&nbsp; <a href="docs/reel/cook-with-me-reel.mp4">16:9 master</a> · 1920×1080, 60 fps, 18.5 MB</sub></td>
+    <td align="center"><sub><b><a href="docs/reel/cook-with-me-reel-vertical.mp4">9:16 vertical</a></b> · 1080×1920, 30 fps, 23.3 MB</sub></td>
+  </tr>
+</table>
+
+Forty-five seconds, with sound, filmed frame by frame from the running app and cut together with its own transitions. GitHub doesn't play videos from the repository inline, so each poster opens its MP4. How it's made is under [Reel](#reel).
 
 ## Screens
 
@@ -91,7 +115,9 @@ cook-with-me/
 ├── frontend/              # Angular 20 application
 ├── backend/               # Express.js REST API
 ├── docs/readme/           # README media (generated, see "README media")
+├── docs/reel/             # the 45-second reel in three cuts (generated, see "Reel")
 ├── tools/readme-media/    # Playwright + ffmpeg script that films the README media
+├── tools/showreel/        # films, composes, scores and encodes the reel
 ├── .github/               # CI workflow
 └── README.md
 ```
@@ -239,3 +265,19 @@ node readme-media.mjs --sheets browse # plus a contact sheet in out/ for review
 ```
 
 Recipe photos are cached in `out/cache` on the first run. Signed-in screens (My collection, Admin) use a fake session plus sample responses, and the script answers every write request itself, so filming never touches your database. It uses your installed Chrome, falling back to Playwright's Chromium.
+
+### Reel
+
+`docs/reel/` holds the 45-second reel, built by [`tools/showreel`](tools/showreel/timeline.mjs) in three cuts: `cook-with-me-reel.mp4` (the 1080p60 master), `cook-with-me-reel-web.mp4` (720p30, under 10 MB, linked at the top of this page) and `cook-with-me-reel-vertical.mp4` (1080×1920, for social), plus `cook-with-me-reel-thumb.jpg` and `cook-with-me-reel-vertical-cover.jpg`. The shots are filmed from the app frame by frame under the same kind of virtual clock (180 subframes a second, averaged into motion blur), then a WebGL compositor cuts them together with the app's own transitions (its field wipe, a plate iris, a deal of ingredient tickets, the platter spin) and a score synthesised to the picture. `timeline.mjs` is the edit: every cut, click and sound cue is timed there.
+
+```bash
+# with the app on :4200 (the API is only needed once, to record the fixtures)
+cd tools/showreel && npm install
+npm run fixtures                       # GET-only: recipes, one recipe page, related recipes; photos to out/cache
+npm run capture                        # film the 16:9 shots          (-- --aspect 9x16 for the vertical cut)
+npm run render                         # compose, score and encode     (-- --aspect 9x16)
+npm run beats                          # review: a frame per beat on a contact sheet
+node verify.mjs                        # the acceptance checks: specs, loudness, sync, colours, determinism
+```
+
+*Filmed from the running app. API responses are served from fixtures recorded from the real API, and save responses are mocked. Recipe photos: [DummyJSON](https://dummyjson.com).*
