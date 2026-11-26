@@ -1,0 +1,54 @@
+# Render Blueprint: the Express API as a web service and the Angular app as a
+# static site. The browser calls the API directly at its onrender.com URL, so
+# each service names the other's URL below. Render gives a service the URL
+# https://<name>.onrender.com unless that name is taken, in which case it adds
+# a suffix: after the first deploy, check both URLs and fix API_URL and
+# FRONTEND_URL if either differs. Reference: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: cook-with-me-api
+    runtime: node
+    plan: free # sleeps after ~15 min idle; the first request then waits while it wakes
+    # region: oregon (the default). Pick the one nearest your MongoDB Atlas
+    # cluster before the first deploy: it can't be changed afterwards.
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeployTrigger: checksPass # deploy a commit only once GitHub CI passes
+    buildFilter:
+      paths:
+        - backend/**
+    envVars:
+      - key: NODE_VERSION
+        value: "22" # matches CI
+      - key: MONGO_DB
+        sync: false # entered in the dashboard when the Blueprint is created
+      - key: JWT_KEY
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://cook-with-me.onrender.com
+      - key: TRUST_PROXY
+        value: "1" # proxy hops in front of the API; see "Deploy on Render" in the README
+
+  - type: web
+    name: cook-with-me
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npx ng build --configuration production --define "API_URL='$API_URL'"
+    staticPublishPath: dist/cook-with-me/browser
+    autoDeployTrigger: checksPass
+    buildFilter:
+      paths:
+        - frontend/**
+    routes:
+      # Angular routes: any path that isn't a real file gets the app shell.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: API_URL # build-time only; no trailing slash, no /api
+        value: https://cook-with-me-api.onrender.com

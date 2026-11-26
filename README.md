@@ -119,6 +119,7 @@ cook-with-me/
 ├── tools/readme-media/    # Playwright + ffmpeg script that films the README media
 ├── tools/showreel/        # films, composes, scores and encodes the reel
 ├── .github/               # CI workflow
+├── render.yaml            # Render Blueprint (see "Deploy on Render")
 └── README.md
 ```
 
@@ -138,7 +139,7 @@ The API base URL lives in `src/environments/`:
 | File | Used for | `apiUrl` |
 |------|----------|----------|
 | `environment.ts` | `npm start` / development | `http://localhost:3000` |
-| `environment.production.ts` | `ng build` (production) | `''` — same origin (`/api/...`). Set a full `https://` URL if the API is hosted elsewhere. |
+| `environment.production.ts` | `ng build` (production) | `''` — same origin (`/api/...`). If the API is hosted elsewhere, build with `--define "API_URL='https://…'"` (the Render static site does). |
 
 ### Scripts
 ```bash
@@ -222,6 +223,7 @@ npm start
 | `PORT`            | no       | Port to listen on (default `3000`) |
 | `FRONTEND_URL`    | no       | Comma-separated browser origins allowed by CORS (default `http://localhost:4200`) |
 | `JWT_EXPIRES_IN`  | no       | Token lifetime, e.g. `1h`, `1d` (default `1d`) |
+| `TRUST_PROXY`     | no       | Number of reverse proxies in front of the API, so rate limits apply per visitor rather than to the proxy. Leave unset locally; see [Deploy on Render](#deploy-on-render). `true` is refused because clients could then choose their own rate-limit key. |
 
 ### Scripts
 ```bash
@@ -245,6 +247,28 @@ user document directly in MongoDB (the old lowercase `"admin"` is still recognis
 | Admin only | `GET /api/getAllUsers`, `GET /api/getDownloadedRecipesList`, `GET /api/getTestimony`, `PATCH /api/updateTestimony/:id`, `POST /api/addRecipe`, `PUT /api/updateRecipe/:id`, `DELETE /api/deleteRecipe/:id` |
 
 Errors are JSON: `{ "message": "...", "errors": [{ "field", "message" }] }` (the `errors` list appears on validation failures).
+
+## Deploy on Render
+
+[`render.yaml`](render.yaml) is a Render Blueprint for two services: the API as a Node web service (`cook-with-me-api`, free plan) and the app as a static site (`cook-with-me`). The browser calls the API directly at its `onrender.com` URL, because a Render static site doesn't proxy requests. The static-site build bakes that URL in with `ng build --define`. Builds without the flag (local, CI) still call the API on their own origin.
+
+1. In MongoDB Atlas, under **Network Access**, allow `0.0.0.0/0`. Render's free services have no fixed outbound IP.
+2. If your Atlas cluster isn't in the US West, set `region` on the API in `render.yaml` first. Render can't move a service once it's created.
+3. In Render, choose **New → Blueprint** and pick this repo. Enter `MONGO_DB` when asked; `JWT_KEY` is generated for you.
+4. Check both service URLs. Render adds a suffix if a name is already taken. If either differs, update `API_URL` (static site) and `FRONTEND_URL` (API), then redeploy the static site so the build picks up the new `API_URL`.
+
+Each service deploys only after GitHub CI passes (`autoDeployTrigger: checksPass`) and only when its own folder changes. On the free plan the API sleeps after about 15 idle minutes, and the next request waits while it wakes.
+
+**Check `TRUST_PROXY` once it's live.** Render doesn't document how many proxies sit in front of a web service, so the Blueprint sets `1`. Every API response has a `RateLimit` header whose `r=` is the requests left in the current 15-minute window for that visitor:
+
+```bash
+API=https://cook-with-me-api.onrender.com
+curl -sI $API/api/allRecipes | grep -i '^ratelimit:'                                    # run twice: r= drops by one
+curl -sI -H 'X-Forwarded-For: 203.0.113.9' $API/api/allRecipes | grep -i '^ratelimit:'  # r= should keep dropping
+```
+
+- If the second command shows a fresh count (`r=299`), the value is too high: a client can pick its own rate-limit key. Lower it.
+- Then run the first command from another network, such as a phone hotspot. If `r=` carries on from the first network's count instead of starting fresh, every visitor shares one key. Raise it by one.
 
 ## Tech Stack
 - **Frontend**: Angular 20, Bootstrap 5, jsPDF (loaded on demand)
