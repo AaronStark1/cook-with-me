@@ -28,7 +28,7 @@ services:
       - key: JWT_KEY
         generateValue: true
       - key: FRONTEND_URL
-        value: https://cook-with-me.onrender.com
+        value: https://cook-with-me-myy5.onrender.com # the static site's URL (Render added -myy5: the plain name was taken)
       - key: TRUST_PROXY
         value: "1" # proxy hops in front of the API; see "Deploy on Render" in the README
 
