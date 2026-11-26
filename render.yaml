@@ -30,7 +30,7 @@ services:
       - key: FRONTEND_URL
         value: https://cook-with-me-myy5.onrender.com # the static site's URL (Render added -myy5: the plain name was taken)
       - key: TRUST_PROXY
-        value: "1" # proxy hops in front of the API; see "Deploy on Render" in the README
+        value: "2" # proxy hops in front of the API (1 keyed requests by a proxy's address); see "Deploy on Render" in the README
 
   - type: web
     name: cook-with-me
