@@ -4,6 +4,7 @@ const cors = require('cors')
 const route = require('./router/route')
 const { apiLimiter } = require('./middleware/rateLimiters')
 const { notFound, errorHandler } = require('./middleware/errorHandler')
+const { trustProxyHops } = require('./config/env')
 
 // Treat any object in a query filter as a literal value, so request bodies such
 // as {"email": {"$ne": null}} cannot be used as query operators.
@@ -17,6 +18,11 @@ const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:4200')
     .filter(Boolean)
 
 app.disable('x-powered-by')
+
+// Behind a host's proxy, req.ip (which keys the rate limiters) is the client's
+// address only if Express knows how many proxy hops to skip.
+const proxyHops = trustProxyHops()
+if (proxyHops > 0) app.set('trust proxy', proxyHops)
 app.use(cors({
     origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
