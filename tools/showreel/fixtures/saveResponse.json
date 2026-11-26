@@ -1,0 +1,11 @@
+{
+  "message": "Added to collection",
+  "newRecipe": {
+    "_id": "5a7ed0000000000000000004",
+    "recipeId": "6985c5ce51ab347a0ec252f0",
+    "name": "Classic Margherita Pizza",
+    "image": "https://cdn.dummyjson.com/recipe-images/1.webp",
+    "userId": "000000000000000000demo01",
+    "__v": 0
+  }
+}
