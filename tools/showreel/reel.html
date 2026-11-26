@@ -1,0 +1,1140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cook With Me reel</title>
+<!--
+  The 45-second Cook With Me reel. Every frame is a pure function of time: window.renderFrame(k)
+  draws output frame k from footage filmed out of the running app (capture.mjs + shots*.mjs:
+  180 or 90 subframes a second under virtual time) and averages three subframes, each drawn with
+  four camera samples, into motion blur. The edit, the cameras, the four transitions (the app's
+  field wipe, plate iris, ticket deal and platter spin) and the reel's own graphics (title, cursor
+  or touch indicator, captions, end card) are drawn here. window.renderAudio() renders the score.
+  ?aspect=16x9 (1920×1080, 60 fps) or ?aspect=9x16 (1080×1920, 30 fps). render.mjs drives both.
+
+  House rules (brief §8): only the app's colour tokens and their flat mixes, exactly two type
+  families loaded from the app's own files, hard edges, hard offset shadows, circles only for the
+  plate and platter motif. No gradients, glows, blur, bloom, vignette or rounded rectangles.
+-->
+<style>
+@font-face {
+  font-family: "Dela Gothic One";
+  font-display: block;
+  src: url("fonts/@fontsource/dela-gothic-one/files/dela-gothic-one-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Archivo";
+  font-weight: 100 900;
+  font-display: block;
+  src: url("fonts/@fontsource-variable/archivo/files/archivo-latin-wght-normal.woff2") format("woff2-variations");
+}
+html, body { margin: 0; overflow: hidden; background: #1C0F0A; }
+canvas#gl { position: absolute; left: 0; top: 0; }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<script type="module">
+import * as TL from "./timeline.mjs";
+import { cover, cubicBezier, easeArrive, easeGlide, easeOutQuad, easeWheel, ARRIVE_START, ARRIVE_SPAN, WIPE_DRIFT } from "./lib/cover.js";
+import { splitIngredient } from "./lib/ingredient.js";
+
+// ───────────────────────────── setup ─────────────────────────────
+const params = new URLSearchParams(location.search);
+const ASPECT = params.get("aspect") === "9x16" ? "9x16" : "16x9";
+const V = ASPECT === "9x16";
+const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
+const PAGE = V ? { w: 432, h: 768 } : { w: 1600, h: 900 };
+/** Output px per page CSS px at zoom 1. */
+const S0 = W / PAGE.w;
+const FPS = TL.FPS[ASPECT], SUB_FPS = TL.SUB_FPS[ASPECT], SUB = 3, CAM_SAMPLES = 4;
+const DURATION = TL.DURATION;
+const MAX_ZOOM = V ? 1.2 : 1.25;
+const DISPLAY = '"Dela Gothic One"';
+const TEXT = '"Archivo"';
+
+// the app's tokens (styles.css) and the precomputed flat mixes the reel uses
+const C = {
+  paper: "#C8281C", ink: "#FFF3E0", surface: "#A51F15", yolk: "#FFC93C", broth: "#1C0F0A", muted: "#FFE6DA", inkSoft: "#5E4B43",
+  paprika: "#B4410E", beet: "#9B1B3C", basil: "#2F5A2E",
+};
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+const mix = (a, b, k) => { const x = hex(a), y = hex(b); return "#" + x.map((v, i) => Math.round((v * k + y[i] * (1 - k)) * 255).toString(16).padStart(2, "0")).join(""); };
+/** color-mix(in srgb, var(--ink) 12%, var(--broth)): the platter's ring tint. */
+C.platterRing = mix(C.ink, C.broth, 0.12);
+
+const clamp = (x, a = 0, b = 1) => (x < a ? a : x > b ? b : x);
+const lerp = (a, b, u) => a + (b - a) * u;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const easeInOut = (u) => ((u = clamp(u)) < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2);
+
+/** Monotone cubic (Fritsch–Carlson) through [time, value] keys: never overshoots. */
+function monotone(keys) {
+  const n = keys.length, xs = keys.map((k) => k[0]), ys = keys.map((k) => k[1]);
+  if (n === 1) return () => ys[0];
+  const d = [], m = new Array(n);
+  for (let i = 0; i < n - 1; i++) d.push((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]));
+  m[0] = d[0];
+  m[n - 1] = d[n - 2];
+  for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+  for (let i = 0; i < n - 1; i++) {
+    if (d[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+    const a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
+    if (s > 9) { const k = 3 / Math.sqrt(s); m[i] = k * a * d[i]; m[i + 1] = k * b * d[i]; }
+  }
+  return (x) => {
+    if (x <= xs[0]) return ys[0];
+    if (x >= xs[n - 1]) return ys[n - 1];
+    let i = 0;
+    while (x > xs[i + 1]) i++;
+    const h = xs[i + 1] - xs[i], u = (x - xs[i]) / h, u2 = u * u, u3 = u2 * u;
+    return (2 * u3 - 3 * u2 + 1) * ys[i] + (u3 - 2 * u2 + u) * h * m[i] + (-2 * u3 + 3 * u2) * ys[i + 1] + (u3 - u2) * h * m[i + 1];
+  };
+}
+
+// ───────────────────────────── the edit ─────────────────────────────
+const SEGMENTS = TL.SEGMENTS;
+const CUTS = TL.CUTS;
+
+/**
+ * Camera keys per segment, [reel t, cx, cy, zoom] in the shot's page CSS px, or
+ * [reel t, anchor, zoom, [dx, dy]] to centre on an element recorded during capture. Zoom 1 shows
+ * the whole viewport; the capture density allows up to MAX_ZOOM without softening.
+ */
+const CAMERA = V ? {
+  // the phone cut: the app's own composition does the framing; the camera only breathes and pushes in
+  title: [[0, 216, 384, 1]],
+  H: [[1.4, 216, 384, 1.0], [8.7, 216, 384, 1.0], [9.9, "dish", 1.16, [0, 0]]],
+  A: [[9.0, 216, 384, 1.0], [14.0, 216, 384, 1.0], [15.2, "plate", 1.1, [0, 60]], [16.4, "plate", 1.1, [0, 60]], [17.2, 216, 400, 1.04], [18.0, 216, 400, 1.04]],
+  I: [[17.9, 216, 384, 1.0], [19.4, 216, 384, 1.0], [22.3, 216, 384, 1.05]],
+  S: [[21.6, 216, 384, 1.0], [23.2, 216, 384, 1.0], [24.0, "wheel", 1.12, [0, 0]], [25.9, "wheel", 1.12, [0, 0]], [26.5, 216, 384, 1.0], [27.9, 216, 384, 1.03]],
+  DC: [[26.9, 216, 384, 1.0], [29.4, 216, 384, 1.04], [29.6, 216, 384, 1.0], [32.3, 216, 384, 1.06], [32.6, 216, 384, 1.0], [35.3, 216, 384, 1.02]],
+  C2: [[34.6, 216, 384, 1.0], [35.7, 216, 384, 1.0], [37.0, 216, 384, 1.08], [38.4, 216, 384, 1.1]],
+  K: [[37.4, 216, 384, 1.0], [40.4, 216, 384, 1.04]],
+  // the end card pushes in about the lockup's left edge (page x 26 stays at output x 65, inside the safe margin)
+  E: [[39.4, 216, 384, 1.0], [45.0, 26 + 475 / (2.5 * 1.03), 384, 1.03]],
+  broth: [[0, 216, 384, 1]],
+} : {
+  title: [[0, 800, 450, 1]],
+  // the headline sits at the far left and the platter at the far right: any push past ~1.05 would cut
+  // one of them, so the hero holds the full poster and only pushes in once it goes into the dish
+  H: [
+    [1.4, 800, 450, 1.0], [3.0, 800, 450, 1.0], [4.5, 800, 458, 1.04], [6.4, 804, 462, 1.05],
+    [7.6, 812, 462, 1.05], [8.6, "dish", 1.07, [-250, 0]], [9.9, "dish", 1.25, [0, 0]],
+  ],
+  A: [[9.0, 800, 450, 1.0], [13.6, 800, 455, 1.0], [14.4, "plate", 1.05, [-120, 0]], [16.0, "plate", 1.08, [-60, 0]], [16.9, 690, 470, 1.06], [18.0, 670, 470, 1.06]],
+  I: [[17.9, 640, 300, 1.15], [19.3, 640, 300, 1.15], [19.9, 800, 450, 1.0], [20.5, 800, 450, 1.0], [21.4, "tile2", 1.2, [20, 40]], [22.3, "tile2", 1.2, [20, 40]]],
+  S: [[21.6, 800, 450, 1.0], [23.1, 800, 450, 1.0], [23.9, "wheel", 1.22, [0, 30]], [25.9, "wheel", 1.22, [0, 30]], [26.6, "panel", 1.12, [0, 0]], [27.9, "panel", 1.14, [0, 0]]],
+  DC: [
+    [26.9, 760, 430, 1.1], [28.0, 760, 440, 1.1], [28.5, 700, 470, 1.12], [29.5, 700, 470, 1.12],
+    [29.9, 800, 450, 1.0], [31.4, "numeral", 1.15, [260, 0]], [32.3, "numeral", 1.15, [260, 0]], [32.9, 800, 600, 1.1], [35.3, 800, 600, 1.1],
+  ],
+  C2: [[34.6, 800, 600, 1.1], [35.3, 800, 450, 1.0], [36.2, "nice", 1.08, [120, 0]], [38.4, "nice", 1.12, [120, 0]]],
+  K: [[37.4, 800, 450, 1.0], [40.4, 800, 440, 1.08]],
+  E: [[39.4, 800, 450, 1.0], [45.0, 800, 450, 1.04]],
+  broth: [[0, 800, 450, 1]],
+};
+
+// ───────────────────────────── footage ─────────────────────────────
+const META = {};
+const SHOT_IDS = [];
+for (const s of Object.values(SEGMENTS)) if (s.shot && !SHOT_IDS.includes(s.shot)) SHOT_IDS.push(s.shot);
+
+function shotIndex(seg, T) {
+  const meta = META[seg.shot];
+  return clamp(Math.round((T - seg.from) * meta.fps), 0, meta.frames.length - 1);
+}
+/** An anchor's rect [x, y, w, h] (page px) in a segment's shot at reel time T, from the nearest recorded frame. */
+function anchorAt(segId, name, T) {
+  const seg = SEGMENTS[segId], frames = META[seg.shot]?.frames;
+  if (!frames) return null;
+  let i = shotIndex(seg, T);
+  i -= i % 3;
+  for (let k = i; k >= 0; k -= 3) if (frames[k].a && frames[k].a[name]) return frames[k].a[name];
+  for (let k = i; k < frames.length; k += 3) if (frames[k].a && frames[k].a[name]) return frames[k].a[name];
+  return null;
+}
+
+const CAM = {};
+function buildCameras() {
+  for (const [segId, keys] of Object.entries(CAMERA)) {
+    const pts = keys.map((k) => {
+      if (typeof k[1] === "string") {
+        const r = anchorAt(segId, k[1], k[0]);
+        if (!r) throw new Error(`camera ${segId}: no anchor "${k[1]}" at ${k[0]}`);
+        const [dx, dy] = k[3] ?? [0, 0];
+        return [k[0], r[0] + r[2] / 2 + dx, r[1] + r[3] / 2 + dy, k[2]];
+      }
+      return k;
+    });
+    const fx = monotone(pts.map((p) => [p[0], p[1]]));
+    const fy = monotone(pts.map((p) => [p[0], p[2]]));
+    const fz = monotone(pts.map((p) => [p[0], p[3]]));
+    CAM[segId] = (T) => {
+      const z = clamp(fz(T), 1, MAX_ZOOM);
+      const hw = PAGE.w / 2 / z, hh = PAGE.h / 2 / z;
+      return [clamp(fx(T), hw, PAGE.w - hw), clamp(fy(T), hh, PAGE.h - hh), z];
+    };
+  }
+  for (const id of Object.keys(SEGMENTS)) CAM[id] ??= () => [PAGE.w / 2, PAGE.h / 2, 1];
+}
+/** Page px → output px through a camera. */
+const toScreen = (cam, x, y) => [(x - cam[0]) * cam[2] * S0 + W / 2, (y - cam[1]) * cam[2] * S0 + H / 2];
+
+// ───────────────────────────── overlays ─────────────────────────────
+const overlay = [0, 1, 2].map(() => {
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  // software-rasterised from the first stroke: a GPU canvas can switch rasteriser mid-run (Chrome's
+  // read-back heuristics), and the same frame must come out the same on every page, every run
+  c.getContext("2d", { willReadFrequently: true });
+  return c;
+});
+let PHOTO = null; // the title plate's photo (the hero's first dish)
+let PHOTO_CIRCLE = null; // where the title drew it (the audit leaves the photograph's own pixels alone)
+let DEAL = []; // the ticket deal's tickets, laid out once
+
+/** Text with tracking (canvas letterSpacing), returns its width. */
+function setFont(g, weight, size, family, tracking = 0) {
+  g.font = `${weight} ${size}px ${family}`;
+  g.letterSpacing = `${tracking * size}px`;
+}
+
+/** The arrow cursor (16:9): cream fill, 2.5 px broth keyline, a hard 3 px broth offset shadow. */
+const ARROW = new Path2D("M2 2 L2 29 L9.5 22.5 L14.5 33.5 L19.5 31.2 L14.6 20.4 L24.5 20.4 Z");
+function pressState(meta, t) {
+  // the press in progress (or the last one) at shot time t
+  let state = { pressed: false, since: Infinity, burstAge: Infinity };
+  for (const p of meta.presses) {
+    if (t >= p.down) {
+      const age = t - p.down;
+      if (age < state.burstAge) state.burstAge = age;
+      if (p.up === null || t < p.up) state.pressed = true;
+    }
+  }
+  for (const d of meta.drags) if (t >= d.at && t < d.at + d.dur) state.pressed = true;
+  return state;
+}
+/** The 8-square burst (the app's save-burst language): yolk, cream, broth, thrown 24 px outward over 400 ms. */
+function burst(g, x, y, age, scale) {
+  if (age < 0 || age > 0.4) return;
+  const u = easeArrive(age / 0.4);
+  const reach = (6 + 24 * u) * scale;
+  const size = 5 * scale * (1 - 0.5 * u);
+  g.save();
+  g.globalAlpha = 1 - prog(age, 0.12, 0.4);
+  for (let i = 0; i < 8; i++) {
+    const a = (i * Math.PI) / 4 - Math.PI / 2;
+    g.fillStyle = [C.yolk, C.ink, C.broth][i % 3];
+    g.fillRect(x + Math.cos(a) * reach - size / 2, y + Math.sin(a) * reach - size / 2, size, size);
+  }
+  g.restore();
+}
+function drawCursor(g, segId, T, cam) {
+  const seg = SEGMENTS[segId];
+  const meta = META[seg.shot];
+  if (!meta) return;
+  const i = shotIndex(seg, T);
+  const f = meta.frames[i];
+  if (!f || !f.m) return;
+  const t = T - seg.from;
+  let shown = 0;
+  for (let k = i; k >= 0 && meta.frames[k].m; k--) shown++;
+  const appear = easeArrive(clamp(shown / meta.fps / 0.12));
+  const [x, y] = toScreen(cam, f.m[0], f.m[1]);
+  const { pressed, burstAge } = pressState(meta, t);
+  const scale = S0 * 0.82 * (0.9 + 0.1 * cam[2]);
+  if (V) return drawTouch(g, x, y, t, meta, scale);
+  burst(g, x, y, burstAge, scale);
+  if (appear <= 0) return;
+  g.save();
+  g.translate(x, y);
+  g.scale(scale * appear, scale * appear);
+  g.translate(-2, -2);
+  const shadow = pressed ? 0 : 3;
+  const press = pressed ? 2 : 0;
+  if (shadow) {
+    g.save();
+    g.translate(shadow, shadow);
+    g.fillStyle = C.broth;
+    g.fill(ARROW);
+    g.lineWidth = 2.5;
+    g.strokeStyle = C.broth;
+    g.lineJoin = "miter";
+    g.stroke(ARROW);
+    g.restore();
+  }
+  g.translate(press, press);
+  g.fillStyle = C.ink;
+  g.fill(ARROW);
+  g.lineWidth = 2.5;
+  g.strokeStyle = C.broth;
+  g.lineJoin = "miter";
+  g.stroke(ARROW);
+  g.restore();
+}
+/** The touch indicator (9:16): a 36 px cream square with a 3 px broth keyline, shown around taps and drags. */
+function drawTouch(g, x, y, t, meta, scale) {
+  let vis = 0, pressed = false, burstAge = Infinity;
+  for (const p of meta.presses) {
+    const end = p.up === null ? Infinity : p.up;
+    const a = prog(t, p.down - 0.18, p.down - 0.06), b = 1 - prog(t, end + 0.12, end + 0.3);
+    vis = Math.max(vis, Math.min(a, b));
+    if (t >= p.down && t < end) pressed = true;
+    if (t >= p.down) burstAge = Math.min(burstAge, t - p.down);
+  }
+  for (const d of meta.drags) {
+    const a = prog(t, d.at - 0.18, d.at - 0.06), b = 1 - prog(t, d.at + d.dur + 0.12, d.at + d.dur + 0.3);
+    vis = Math.max(vis, Math.min(a, b));
+    if (t >= d.at && t < d.at + d.dur) pressed = true;
+  }
+  burst(g, x, y, burstAge, W / 1080 * 1.6);
+  if (vis <= 0) return;
+  const size = 36 * easeArrive(vis) * (pressed ? 0.85 : 1);
+  g.fillStyle = C.ink;
+  g.fillRect(x - size / 2, y - size / 2, size, size);
+  g.lineWidth = 3;
+  g.strokeStyle = C.broth;
+  g.strokeRect(x - size / 2 + 1.5, y - size / 2 + 1.5, size - 3, size - 3);
+}
+
+/** A word that rises from behind its own baseline mask (translateY 105 % → 0, ease-arrive). */
+function maskRise(g, text, x, y, size, color, t0, T, dur = 0.7, align = "left") {
+  const u = easeArrive(prog(T, t0, t0 + dur));
+  if (u <= 0) return 0;
+  const w = g.measureText(text).width;
+  const left = align === "center" ? x - w / 2 : x;
+  g.save();
+  g.beginPath();
+  // the clip: the line box, with room for ascenders and the hard shadow, but nothing below the baseline band
+  g.rect(left - size * 0.2, y - size * 1.0, w + size * 0.4, size * 1.12);
+  g.clip();
+  g.fillStyle = color;
+  g.textAlign = "left";
+  g.fillText(text, left, y + size * 1.05 * (1 - u));
+  g.restore();
+  return w;
+}
+
+/** The title: a broth field, a cream plate that slides in, the first dish irising open, the hook. */
+function drawTitle(g, T) {
+  const z = lerp(1, 1.03, easeInOut(prog(T, 0, 2.4)));
+  g.save();
+  g.translate(W / 2, H / 2);
+  g.scale(z, z);
+  g.translate(-W / 2, -H / 2);
+  const [p0, p1] = TL.T.titlePlateIn;
+  const slide = easeArrive(prog(T, p0, p1));
+  const D = V ? 820 : 620;
+  const cx0 = V ? W / 2 : 1440, cy0 = V ? 1150 : 560;
+  const cx = cx0 + (1 - slide) * (W - cx0 + D * 0.7);
+  const R = D / 2;
+  // the plate
+  g.fillStyle = C.ink;
+  g.beginPath();
+  g.arc(cx, cy0, R, 0, Math.PI * 2);
+  g.fill();
+  // 3 px dashed yolk ring, as on the app's plate face
+  g.save();
+  g.strokeStyle = C.yolk;
+  g.lineWidth = 3 * S0 * 1.4;
+  const ringR = R * 0.94;
+  const n = Math.round((2 * Math.PI * ringR) / (30 * 1.4));
+  g.setLineDash([(2 * Math.PI * ringR) / n * 0.6, (2 * Math.PI * ringR) / n * 0.4]);
+  g.lineDashOffset = -slide * 120;
+  g.beginPath();
+  g.arc(cx, cy0, ringR, 0, Math.PI * 2);
+  g.stroke();
+  g.restore();
+  // the photo irises open inside the plate (cover curve), a 6 px yolk ring leading
+  const [i0, i1] = TL.T.titleIris;
+  const c = cover(prog(T, i0, i1));
+  const photoR = R * 0.82;
+  PHOTO_CIRCLE = c > 0 ? { x: cx + 0, y: cy0, r: photoR * c, z } : null;
+  if (c > 0 && PHOTO) {
+    const r = photoR * c;
+    g.save();
+    g.beginPath();
+    g.arc(cx, cy0, r, 0, Math.PI * 2);
+    g.clip();
+    const s = (photoR * 2) / Math.min(PHOTO.width, PHOTO.height);
+    g.drawImage(PHOTO, cx - (PHOTO.width * s) / 2, cy0 - (PHOTO.height * s) / 2, PHOTO.width * s, PHOTO.height * s);
+    g.restore();
+    if (c < 1) {
+      g.strokeStyle = C.yolk;
+      g.lineWidth = 6 * S0 * 1.2;
+      g.beginPath();
+      g.arc(cx, cy0, Math.max(0.5, r), 0, Math.PI * 2);
+      g.stroke();
+    }
+  }
+  // the hook: WHAT'S FOR (mask-rise, 70 ms stagger), then a yolk block wipes in and DINNER? rises in it
+  let size = V ? 132 : 112;
+  setFont(g, 400, size, DISPLAY, 0);
+  if (V) {
+    // the phone hook fills the top third's safe width (x 64–1016), never past it
+    const widest = Math.max(g.measureText(TL.TITLE.line1.join(" ")).width, g.measureText(TL.TITLE.line2).width * 1.08);
+    size = Math.floor(size * Math.min(1, (W - 2 * 96) / widest));
+    setFont(g, 400, size, DISPLAY, 0);
+  }
+  g.textBaseline = "alphabetic";
+  const x0 = V ? 96 : 118;
+  const y1 = V ? 520 : 470;
+  const words = TL.TITLE.line1;
+  let x = x0;
+  const space = size * 0.3;
+  words.forEach((word, i) => {
+    const w = g.measureText(word).width;
+    maskRise(g, word, x, y1, size, C.ink, TL.T.titleWords + i * 0.07, T);
+    x += w + space;
+  });
+  const line2 = TL.TITLE.line2;
+  const w2 = g.measureText(line2).width;
+  const padX = size * 0.22, padTop = size * 0.2, padBottom = size * 0.16;
+  const y2 = y1 + size * 1.12;
+  const [b0, b1] = TL.T.titleBlock;
+  const bw = easeArrive(prog(T, b0, b1)) * (w2 + padX * 2);
+  if (bw > 0) {
+    g.fillStyle = C.yolk;
+    g.fillRect(x0 - padX, y2 - size * 0.86 - padTop, bw, size * 0.86 + padTop + padBottom);
+  }
+  if (T >= TL.T.titleDinner) {
+    g.save();
+    g.beginPath();
+    g.rect(x0 - padX, y2 - size * 0.86 - padTop, w2 + padX * 2, size * 0.86 + padTop + padBottom);
+    g.clip();
+    maskRise(g, line2, x0, y2, size, C.broth, TL.T.titleDinner, T, 0.6);
+    g.restore();
+  }
+  g.restore();
+}
+
+/** The end card, drawn around the real headline (#hero-title anchor) of the E shot. */
+function drawEndCard(g, T, cam) {
+  const r = anchorAt("E", "title", T);
+  if (!r) return;
+  const [tx, ty] = toScreen(cam, r[0], r[1]);
+  const [bx, by] = toScreen(cam, r[0] + r[2], r[1] + r[3]);
+  const scale = cam[2] * S0;
+  // wordmark above the headline: COOK + a yolk block WITH ME (the site's own lockup, larger)
+  const wm = 30 * scale;
+  setFont(g, 400, wm, DISPLAY, 0);
+  const cookW = g.measureText("COOK").width;
+  const withW = g.measureText("WITH ME").width;
+  const wy = ty - wm * 0.95;
+  maskRise(g, "COOK", tx, wy, wm, C.ink, TL.T.endWordmark, T, 0.6);
+  const blockX = tx + cookW + wm * 0.32;
+  const pad = [0.28 * wm, 0.4 * wm, 0.2 * wm];
+  const blockU = easeArrive(prog(T, TL.T.endWordmark + 0.12, TL.T.endWordmark + 0.6));
+  if (blockU > 0) {
+    const bwFull = withW + pad[1] * 2;
+    const top = wy - wm * 0.82 - pad[0];
+    const h = wm * 0.82 + pad[0] + pad[2];
+    g.save();
+    g.beginPath();
+    g.rect(blockX, top, bwFull * blockU, h);
+    g.clip();
+    g.fillStyle = C.yolk;
+    g.fillRect(blockX, top, bwFull, h);
+    g.fillStyle = C.broth;
+    g.fillText("WITH ME", blockX + pad[1], wy);
+    g.restore();
+  }
+  // kicker below the headline: a 44 × 3 px rule draws from the left, then the words rise
+  const ks = 15 * scale;
+  setFont(g, 800, ks, TEXT, 0.14);
+  const ky = by + ks * 3.2;
+  const ruleU = easeArrive(prog(T, TL.T.endKicker, TL.T.endKicker + 0.5));
+  if (ruleU > 0) {
+    g.fillStyle = C.ink;
+    g.fillRect(tx, ky - ks * 0.42 - 1.5 * scale, 44 * scale * ruleU, 3 * scale);
+  }
+  maskRise(g, TL.END_CARD.kicker, tx + 44 * scale + ks * 0.85, ky, ks, C.ink, TL.T.endKicker + 0.08, T, 0.6);
+  // the URL wipes in from the left (on the phone, sized to the safe width)
+  let us = 21 * scale;
+  setFont(g, 700, us, TEXT, 0.01);
+  if (V) {
+    us = Math.min(us, us * ((W - 64 - tx) / g.measureText(TL.END_CARD.url).width));
+    setFont(g, 700, us, TEXT, 0.01);
+  }
+  const uy = ky + us * 2.1;
+  const uw = g.measureText(TL.END_CARD.url).width;
+  const urlU = cover(prog(T, TL.T.endUrl, TL.T.endUrl + 0.65));
+  if (urlU > 0) {
+    g.save();
+    g.beginPath();
+    g.rect(tx - 4, uy - us * 1.1, (uw + 8) * urlU, us * 1.5);
+    g.clip();
+    g.fillStyle = C.ink;
+    g.fillText(TL.END_CARD.url, tx, uy);
+    g.restore();
+  }
+}
+
+/** Captions (9:16): the app's toast — a broth block, an 8 px yolk left edge, cream Archivo 800 caps. */
+function drawCaption(g, T) {
+  for (const cap of TL.CAPTIONS) {
+    if (T < cap.from || T > cap.to + 0.4) continue;
+    const size = V ? 40 : 26;
+    setFont(g, 800, size, TEXT, 0.14);
+    const tw = g.measureText(cap.text).width;
+    const padX = size * 0.75, padY = size * 0.62, edge = 8;
+    const w = tw + padX * 2 + edge, h = size + padY * 2;
+    const x0 = V ? 64 : 64, y0 = V ? 1540 - h : H - 88 - h;
+    const inU = easeArrive(prog(T, cap.from, cap.from + 0.42));
+    const outU = cover(prog(T, cap.to, cap.to + 0.36));
+    const x = x0 - (1 - inU) * (w + x0);
+    g.save();
+    g.beginPath();
+    // leave with a clip wipe (the block is cut away from its left edge)
+    g.rect(x + w * outU, y0 - 4, w * (1 - outU) + 12, h + 12);
+    g.clip();
+    g.fillStyle = C.broth;
+    g.fillRect(x, y0, w, h);
+    g.fillStyle = C.yolk;
+    g.fillRect(x, y0, edge, h);
+    g.fillStyle = C.ink;
+    g.textBaseline = "middle";
+    g.fillText(cap.text, x + edge + padX, y0 + h / 2 + size * 0.04);
+    g.textBaseline = "alphabetic";
+    g.restore();
+  }
+}
+
+// ── §7.3 the ticket deal: Bibimbap's real ingredients as oversized app tickets ──
+// Base tickets (one per ingredient, in rows that run off both edges) cover the frame by the
+// downbeat; two short extras land on top. Ticket height grows until the coverage at the swap is
+// verified complete (no holes in any of the three subframes around it).
+const DEAL_IN = 0.42, DEAL_OUT = 0.45, DEAL_STAGGER_IN = 0.04, DEAL_STAGGER_OUT = 0.03;
+function dealCut() {
+  return CUTS.find((c) => c.kind === "deal");
+}
+function layoutDeal(lines, h) {
+  const g = overlay[2].getContext("2d");
+  const parsedFull = lines.map(splitIngredient).map((t) => ({ name: t.name.toUpperCase(), qty: t.quantity ? t.quantity.toUpperCase() : null }));
+  const rows = V ? 10 : 5;
+  const base = 10, extras = 2;
+  const size = h / 1.62;
+  const padX = size * 0.5;
+  const pitch = H / rows;
+  // like the app's ticket (one line, text-overflow: ellipsis): a name never makes a strip wider than this,
+  // so a ±2° tilt about a strip's centre stays a small slope across the visible frame
+  const maxW = V ? W + size * 1.4 : W * 1.1;
+  const fit = (t) => {
+    setFont(g, 400, size, DISPLAY, 0);
+    if (g.measureText(t.name).width + padX * 2 <= maxW) return t;
+    let name = t.name;
+    while (name.length > 4 && g.measureText(name + "…").width + padX * 2 > maxW) name = name.slice(0, -1).trimEnd();
+    return { ...t, name: name + "…" };
+  };
+  const widthOf = (t) => {
+    setFont(g, 400, size, DISPLAY, 0);
+    let w = g.measureText(t.name).width + padX * 2;
+    if (t.qty) {
+      setFont(g, 800, size * 0.36, TEXT, 0.1);
+      w += g.measureText(t.qty).width + size * 0.4;
+    }
+    return w;
+  };
+  const parsed = parsedFull.map(fit);
+  // pair long with short so every row runs past both edges
+  const byLength = parsed.map((t, i) => ({ ...t, i, w: widthOf(t) })).sort((a, b) => b.w - a.w).slice(0, base);
+  const out = [];
+  const tilt = [-2, 1.5, 2, -1.5, 1, -2, 1.5, -1, 2, -1.5];
+  for (let r = 0; r < rows; r++) {
+    const cy = pitch * (r + 0.5);
+    const inRow = V ? [byLength[r]] : [byLength[r], byLength[base - 1 - r]];
+    const margin = size * 0.22; // the left ticket's name starts just inside the frame
+    if (inRow.length === 1) {
+      const t = inRow[0];
+      const w = Math.max(t.w, W + margin + size * 0.6);
+      out.push({ ...t, w, cx: -margin + w / 2 });
+    } else {
+      // every name must start on screen: the right ticket begins where the left one ends (less an
+      // overlap) and runs on past the edge; a name longer than most of the frame always goes right
+      const [long, short] = inRow;
+      const [a, b] = long.w > W * 0.62 || r % 2 ? [short, long] : [long, short];
+      const overlap = size * 1.1;
+      const wa = Math.max(a.w, size * 4);
+      const x1 = -margin + wa - overlap;
+      const wb = Math.max(b.w, W + size * 0.6 - x1);
+      out.push({ ...a, w: wa, cx: -margin + wa / 2 });
+      out.push({ ...b, w: wb, cx: x1 + wb / 2 });
+    }
+  }
+  out.forEach((t, k) => Object.assign(t, { cy: t.cy ?? pitch * (Math.floor(V ? k : k / 2) + 0.5), h, rot: (tilt[k % tilt.length] * Math.PI) / 180 }));
+  // re-assign row centres (pairs share a row)
+  let k = 0;
+  for (let r = 0; r < rows; r++) for (let j = 0; j < (V ? 1 : 2); j++) out[k++].cy = pitch * (r + 0.5);
+  // extras: the two shortest ingredients again, tilted harder, on top near the middle
+  const shortest = parsed.map((t) => ({ ...t, w: widthOf(t) })).sort((a, b) => a.w - b.w).slice(0, extras);
+  shortest.forEach((t, j) => {
+    const fx = V ? [0.32, 0.66][j] : [0.3, 0.7][j];
+    const fy = V ? [0.38, 0.62][j] : [0.42, 0.6][j];
+    out.push({ ...t, cx: W * fx, cy: H * fy, h, rot: ((j % 2 ? 6 : -5) * Math.PI) / 180 });
+  });
+  // entry and exit points around all four edges, by index (the app's ticketEntry golden-ratio spread)
+  out.forEach((t, i) => {
+    t.i = i;
+    t.size = size;
+    t.padX = padX;
+    t.fill = i % 2 ? C.yolk : C.ink;
+    const along = 0.12 + ((i * 0.618034) % 1) * 0.76;
+    const ox = t.w / 2 + size, oy = t.h / 2 + size;
+    const edge = i % 4;
+    t.from = [[-ox, along * H], [along * W, -oy], [W + ox, along * H], [along * W, H + oy]][edge];
+    t.to = [[W + ox, (1 - along) * H], [(1 - along) * W, H + oy], [-ox, (1 - along) * H], [(1 - along) * W, -oy]][edge];
+    t.bend = i % 2 ? 0.16 : -0.16;
+  });
+  return out;
+}
+/** Quadratic arc from a to b, bowed sideways by bend × distance. */
+function arc(a, b, bend, u) {
+  const mx = (a[0] + b[0]) / 2 - (b[1] - a[1]) * bend, my = (a[1] + b[1]) / 2 + (b[0] - a[0]) * bend;
+  const v = 1 - u;
+  return [v * v * a[0] + 2 * v * u * mx + u * u * b[0], v * v * a[1] + 2 * v * u * my + u * u * b[1]];
+}
+function dealWindow() {
+  const cut = dealCut();
+  return [cut.at, cut.cover + (DEAL.length - 1) * DEAL_STAGGER_OUT + DEAL_OUT];
+}
+function drawDeal(g, T, tickets = DEAL) {
+  const cut = dealCut();
+  if (!cut || !tickets.length) return;
+  const [a, b] = [cut.at, cut.cover + (tickets.length - 1) * DEAL_STAGGER_OUT + DEAL_OUT];
+  if (T < a || T > b) return;
+  for (const t of tickets) {
+    const sIn = cut.at + t.i * DEAL_STAGGER_IN;
+    const sOut = cut.cover + t.i * DEAL_STAGGER_OUT;
+    const uIn = easeArrive(prog(T, sIn, sIn + DEAL_IN));
+    const uOut = easeGlide(prog(T, sOut, sOut + DEAL_OUT));
+    if (uIn <= 0 || uOut >= 1) continue;
+    const rest = [t.cx, t.cy];
+    let p = arc(t.from, rest, t.bend, uIn);
+    if (uOut > 0) {
+      const q = arc(rest, t.to, -t.bend, uOut);
+      p = [p[0] + q[0] - rest[0], p[1] + q[1] - rest[1]];
+    }
+    const spin = t.rot * (1 + 2 * (1 - uIn) + 2 * uOut);
+    g.save();
+    g.translate(p[0], p[1]);
+    g.rotate(spin);
+    const s = t.size;
+    const sh = s * 0.09; // the app's hard 4px 4px 0 broth offset, scaled with the ticket
+    g.fillStyle = C.broth;
+    g.fillRect(-t.w / 2 + sh, -t.h / 2 + sh, t.w, t.h);
+    g.fillStyle = t.fill;
+    g.fillRect(-t.w / 2, -t.h / 2, t.w, t.h);
+    const lw = s * 0.05;
+    g.lineWidth = lw;
+    g.strokeStyle = C.broth;
+    g.strokeRect(-t.w / 2 + lw / 2, -t.h / 2 + lw / 2, t.w - lw, t.h - lw);
+    setFont(g, 400, s, DISPLAY, 0);
+    g.fillStyle = C.broth;
+    g.textBaseline = "middle";
+    g.fillText(t.name, -t.w / 2 + t.padX, s * 0.06);
+    if (t.qty) {
+      const nameW = g.measureText(t.name).width;
+      setFont(g, 800, s * 0.36, TEXT, 0.1);
+      g.fillText(t.qty, -t.w / 2 + t.padX + nameW + s * 0.4, s * 0.04);
+    }
+    g.textBaseline = "alphabetic";
+    g.restore();
+  }
+}
+/** Holes (uncovered pixels) in the deal at the swap's three subframes. */
+function dealHoles(tickets = DEAL) {
+  const cut = dealCut();
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  return [cut.cover - 1 / SUB_FPS, cut.cover, cut.cover + 1 / SUB_FPS].map((T) => {
+    g.clearRect(0, 0, W, H);
+    drawDeal(g, T, tickets);
+    const d = g.getImageData(0, 0, W, H).data;
+    let holes = 0;
+    for (let i = 3; i < d.length; i += 4) if (d[i] < 255) holes++;
+    return { T: Math.round(T * 1e4) / 1e4, holes };
+  });
+}
+/** The smallest ticket height (from a pitch-and-a-bit up) whose deal covers the frame at the swap. */
+function fitDeal(lines) {
+  const rows = V ? 10 : 5;
+  for (let h = (H / rows) * 1.2; h < (H / rows) * 1.75; h *= 1.03) {
+    const tickets = layoutDeal(lines, h);
+    if (dealHoles(tickets).every((r) => r.holes === 0)) return tickets;
+  }
+  throw new Error("the ticket deal cannot cover the frame at the swap");
+}
+
+function drawSide(canvas, segId, T, cam) {
+  const g = canvas.getContext("2d");
+  g.clearRect(0, 0, W, H);
+  if (!segId) return;
+  if (segId === "title") drawTitle(g, T);
+  if (segId === "E") drawEndCard(g, T, cam);
+  if (SEGMENTS[segId]?.shot) drawCursor(g, segId, T, cam);
+}
+/** The thumbnail's play glyph on the end card's active dish: a cream disc, a 6 px yolk ring, a broth triangle. */
+let PLAY = false;
+function drawPlay(g, T) {
+  const r = anchorAt("E", "dish", T);
+  if (!r) return;
+  const cam = CAM.E(T);
+  const [x, y] = toScreen(cam, r[0] + r[2] / 2, r[1] + r[3] / 2);
+  const R = (V ? 92 : 78) * (W / 1920) * (V ? 1.6 : 1);
+  g.fillStyle = C.ink;
+  g.beginPath();
+  g.arc(x, y, R, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = C.yolk;
+  g.lineWidth = 6 * S0;
+  g.beginPath();
+  g.arc(x, y, R - 3 * S0, 0, Math.PI * 2);
+  g.stroke();
+  g.fillStyle = C.broth;
+  g.beginPath();
+  const a = R * 0.42;
+  g.moveTo(x - a * 0.62, y - a);
+  g.lineTo(x + a * 1.0, y);
+  g.lineTo(x - a * 0.62, y + a);
+  g.closePath();
+  g.fill();
+}
+function drawTop(canvas, T) {
+  const g = canvas.getContext("2d");
+  g.clearRect(0, 0, W, H);
+  drawDeal(g, T);
+  if (V) drawCaption(g, T);
+  if (PLAY) drawPlay(g, T);
+}
+
+// ───────────────────────────── WebGL ─────────────────────────────
+const canvas = document.getElementById("gl");
+canvas.width = W;
+canvas.height = H;
+canvas.style.width = W + "px";
+canvas.style.height = H + "px";
+const gl = canvas.getContext("webgl2", { antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: true, alpha: false });
+if (!gl.getExtension("EXT_color_buffer_float")) throw new Error("EXT_color_buffer_float is required");
+
+const VERT = `#version 300 es
+in vec2 aPos; out vec2 vUv;
+void main() { vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
+
+const SCENE_FRAG = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 outColor;
+uniform vec2 uRes, uPage;
+uniform float uS0, uWeight;
+uniform sampler2D uA, uB, uOA, uOB, uTop;
+uniform vec3 uCamA, uCamB, uFieldA, uFieldB, uFillB;
+uniform int uHasA, uHasB, uMode;
+uniform vec4 uP1, uP2, uP3;
+const vec3 YOLK = vec3(1.0, 201.0 / 255.0, 60.0 / 255.0);
+const vec3 CREAM = vec3(1.0, 243.0 / 255.0, 224.0 / 255.0);
+const vec3 BROTH = vec3(28.0 / 255.0, 15.0 / 255.0, 10.0 / 255.0);
+const float TAU = 6.28318530718;
+
+vec3 shot(sampler2D tex, vec3 cam, vec2 px, int has, vec3 field) {
+  if (has == 0) return field;
+  vec2 css = (px - uRes * 0.5) / (cam.z * uS0) + cam.xy;
+  vec2 uv = css / uPage;
+  if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return field;
+  return texture(tex, uv).rgb;
+}
+vec3 over(vec3 c, sampler2D ov, vec2 px) {
+  vec2 uv = px / uRes;
+  if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) return c;
+  vec4 o = texture(ov, uv);
+  return c * (1.0 - o.a) + o.rgb;
+}
+vec3 sideA(vec2 px) { return over(shot(uA, uCamA, px, uHasA, uFieldA), uOA, px); }
+vec3 sideB(vec2 px, vec3 fill) { return over(shot(uB, uCamB, px, uHasB, fill), uOB, px); }
+mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, s, -s, c); }
+/** a dashed ring: dashes of 60 % of each period, n periods around, turned by phase (radians) */
+bool dashed(vec2 d, float n, float phase) {
+  float a = atan(d.y, d.x) + phase;
+  return fract(a / TAU * n) < 0.6;
+}
+
+void main() {
+  vec2 px = vec2(vUv.x, 1.0 - vUv.y) * uRes;
+  vec3 col;
+  if (uMode == 0) {
+    col = sideA(px);
+  } else if (uMode == 1) {
+    // §7.1 the field wipe: uP1 = (c, k, dir, bar)
+    float c = uP1.x, k = uP1.y, dir = uP1.z, bar = uP1.w;
+    float x = dir > 0.0 ? px.x : uRes.x - px.x;
+    // the leaving layer's leading edge, with the yolk bar attached, travels across and off (app geometry)
+    float xb = (uRes.x + bar) * (1.0 - c) - bar;
+    if (x < xb) col = sideA(px + vec2(dir * ${WIPE_DRIFT.toFixed(2)} * uRes.x * c, 0.0));
+    else if (x < xb + bar) col = YOLK;
+    else col = sideB(px - vec2(dir * 0.15 * uRes.x * (1.0 - k), 0.0), uFillB);
+  } else if (uMode == 2) {
+    // §7.2 the plate iris: uP1 = (ox, oy, r, ring) uP2 = (rotB, scaleB, scaleA, dashPhase) uP3 = (dashGap, dashW, dashN, 0)
+    vec2 o = uP1.xy; float r = uP1.z, ring = uP1.w;
+    vec2 d = px - o;
+    float dist = length(d);
+    if (dist < r - ring * 0.5) {
+      col = sideB(o + rot(-uP2.x) * d / uP2.y, uFillB);
+    } else {
+      col = sideA(o + d / uP2.z);
+      float dr = r + ring * 0.5 + uP3.x;
+      if (dist < r + ring * 0.5) col = YOLK;
+      else if (dist >= dr && dist < dr + uP3.y && dashed(d, uP3.z, uP2.w)) col = YOLK;
+    }
+  } else if (uMode == 3) {
+    // §7.3 the ticket deal: the scene swaps under full cover (the tickets are on uTop)
+    col = uP1.x < 0.5 ? sideA(px) : sideB(px, uFillB);
+  } else {
+    // §7.4 the platter spin: uP1 = (thA, sA, thB, sB) uP2 = (pivot.xy, rA, rB) uP3 = (rim, bOnTop, ringPhase, ringW)
+    vec2 P = uP2.xy, Cc = uRes * 0.5;
+    vec2 vA = rot(-uP1.x) * (px - P) + P - Cc;
+    vec2 vB = rot(-uP1.z) * (px - P) + P - Cc;
+    float rim = uP3.x;
+    // the broth platter behind, its concentric rings in a flat tint (one dashed, turning with the spin)
+    float dp = length(px - P);
+    float R0 = length(vec2(uRes.x * 0.5, P.y));
+    vec3 tint = vec3(55.0, 42.0, 36.0) / 255.0;
+    col = BROTH;
+    float rw = uP3.w;
+    if (abs(dp - R0 * 0.956) < rw || abs(dp - R0 * 0.68) < rw) col = tint;
+    if (abs(dp - R0 * 0.86) < rw * 1.6 && dashed(px - P, 160.0, uP3.z)) col = tint;
+    bool aIn = length(vA) < uP2.z, bIn = length(vB) < uP2.w;
+    vec3 a = length(vA) < uP2.z - rim ? sideA(Cc + vA / uP1.y) : CREAM;
+    vec3 b = length(vB) < uP2.w - rim ? sideB(Cc + vB / uP1.w, uFillB) : CREAM;
+    if (uP3.y > 0.5) { if (aIn) col = a; if (bIn) col = b; }
+    else { if (bIn) col = b; if (aIn) col = a; }
+  }
+  col = over(col, uTop, px);
+  outColor = vec4(col * uWeight, 1.0);
+}`;
+
+const FINAL_FRAG = `#version 300 es
+precision highp float;
+in vec2 vUv; out vec4 outColor;
+uniform sampler2D uAcc;
+void main() { outColor = vec4(texture(uAcc, vUv).rgb, 1.0); }`;
+
+function compile(src, type) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s));
+  return s;
+}
+function program(frag) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(VERT, gl.VERTEX_SHADER));
+  gl.attachShader(p, compile(frag, gl.FRAGMENT_SHADER));
+  gl.bindAttribLocation(p, 0, "aPos");
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+  const u = {};
+  const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS);
+  for (let i = 0; i < n; i++) {
+    const name = gl.getActiveUniform(p, i).name.replace(/\[0\]$/, "");
+    u[name] = gl.getUniformLocation(p, name);
+  }
+  return { p, u };
+}
+const progScene = program(SCENE_FRAG), progFinal = program(FINAL_FRAG);
+const quad = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+gl.enableVertexAttribArray(0);
+gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+function texture({ mip = false } = {}) {
+  const t = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, mip ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  return t;
+}
+const accTex = texture();
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, W, H, 0, gl.RGBA, gl.HALF_FLOAT, null);
+const accFb = gl.createFramebuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER, accFb);
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, accTex, 0);
+const shotTex = [texture({ mip: true }), texture({ mip: true })];
+const ovTex = [texture(), texture(), texture()];
+function upload(tex, source, mip) {
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, !mip);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, source);
+  if (mip) gl.generateMipmap(gl.TEXTURE_2D);
+}
+function bindTex(unit, tex) {
+  gl.activeTexture(gl.TEXTURE0 + unit);
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+}
+
+// ───────────────────────────── frame assembly ─────────────────────────────
+
+/** What is on screen at reel time T: one segment, or two with a transition between them. */
+function sceneAt(T) {
+  let current = "title";
+  for (const c of CUTS) {
+    // the ticket deal is a hard cut at full cover: the tickets (top layer) hide the swap
+    if (c.kind === "deal") {
+      if (T < c.cover) break;
+      current = c.b;
+      continue;
+    }
+    if (T < c.at) break;
+    if (T < c.at + c.dur) return { a: c.a, b: c.b, cut: c, u: (T - c.at) / c.dur };
+    current = c.b;
+  }
+  return { a: current, b: null, cut: null, u: 0 };
+}
+
+const bitmapCache = new Map();
+async function loadBitmap(segId, T) {
+  const seg = SEGMENTS[segId];
+  if (!seg || !seg.shot) return null;
+  const i = shotIndex(seg, T);
+  const key = `${seg.shot}/${i}`;
+  if (bitmapCache.has(key)) return bitmapCache.get(key);
+  const res = await fetch(`out/shots/${ASPECT}/${seg.shot}/${String(i).padStart(5, "0")}.jpg`);
+  if (!res.ok) throw new Error(`missing frame ${ASPECT} ${seg.shot}/${i}`);
+  const bmp = await createImageBitmap(await res.blob(), { colorSpaceConversion: "none", premultiplyAlpha: "none" });
+  bitmapCache.set(key, bmp);
+  if (bitmapCache.size > 8) {
+    const [old] = bitmapCache.keys();
+    bitmapCache.get(old).close();
+    bitmapCache.delete(old);
+  }
+  return bmp;
+}
+
+/** The flat colour a side shows outside its footage (or instead of it). */
+const FIELD = { title: C.broth, broth: C.broth, H: C.paper, E: C.paper, A: C.paprika, I: C.paper, S: C.paper, DC: C.paper, C2: C.paprika, K: C.paper };
+const fieldRgb = (id) => hex(FIELD[id] ?? C.broth);
+
+/** The transition's shader parameters at camera-sample time Tc. */
+function transition(scene, Tc) {
+  const c = scene.cut;
+  if (!c) return { mode: 0, p1: [0, 0, 0, 0], p2: [0, 0, 0, 0], p3: [0, 0, 0, 0] };
+  const u = clamp((Tc - c.at) / c.dur);
+  if (c.kind === "wipe") {
+    const k = easeOutQuad(prog(u, ARRIVE_START, ARRIVE_START + ARRIVE_SPAN));
+    return { mode: 1, p1: [cover(u), k, c.dir, 6 * S0], p2: [0, 0, 0, 0], p3: [0, 0, 0, 0] };
+  }
+  if (c.kind === "iris") {
+    const [segId, name] = c.origin;
+    const r = anchorAt(segId, name, Math.min(Tc, c.at));
+    const cam = CAM[segId](Tc);
+    const [ox, oy] = r ? toScreen(cam, r[0] + r[2] / 2, r[1] + r[3] / 2) : [W / 2, H / 2];
+    const r0 = r ? (Math.min(r[2], r[3]) / 2) * cam[2] * S0 : 0;
+    const reach = Math.max(Math.hypot(ox, oy), Math.hypot(W - ox, oy), Math.hypot(ox, H - oy), Math.hypot(W - ox, H - oy));
+    const cv = cover(u);
+    const rr = lerp(r0, reach + 12 * S0 + 26 * S0, cv);
+    const turn = (-18 * Math.PI) / 180 * (1 - cv);
+    const dashR = rr + 3 * S0 + 14 * S0;
+    const n = Math.max(8, Math.round((2 * Math.PI * dashR) / (30 * S0)));
+    return { mode: 2, p1: [ox, oy, rr, 6 * S0], p2: [turn, 1.12 - 0.12 * cv, 1 + 0.06 * cv, -turn], p3: [14 * S0, 3 * S0, n, 0] };
+  }
+  // platter: A rides 0 → −24°, B +24° → 0, scales follow the hero's law (1 → 0.56 leaving, 0.56 → 1 arriving)
+  const e = easeWheel(u);
+  const thA = (-24 * Math.PI) / 180 * e, thB = (24 * Math.PI) / 180 * (1 - e);
+  const sA = lerp(1, 0.56, e), sB = lerp(0.56, 1, e);
+  const cover0 = Math.hypot(W / 2, H / 2) + 4;
+  const small = (V ? 0.4 * W : 0.42 * H);
+  const radius = (s) => lerp(small, cover0, (s - 0.56) / 0.44);
+  return {
+    mode: 4,
+    p1: [thA, sA, thB, sB],
+    p2: [W / 2, 1.9 * H, radius(sA), radius(sB)],
+    p3: [12 * S0, sB >= sA ? 1 : 0, (-24 * Math.PI) / 180 * e, 1.5 * S0],
+  };
+}
+
+/** Frames inside a transition (drawn or filmed in the app) use a narrow shutter so the yolk edge stays hard. */
+function narrowShutter(T) {
+  for (const c of CUTS) if ((c.kind === "wipe" || c.kind === "iris") && T >= c.at - 0.02 && T <= c.at + c.dur + 0.02) return true;
+  for (const [s, d] of TL.APP_WIPES) if (T >= s - 0.02 && T <= s + d + 0.02) return true;
+  return false;
+}
+
+async function renderSubframe(T, weight, camSpread) {
+  const scene = sceneAt(T);
+  const [ba, bb] = await Promise.all([loadBitmap(scene.a, T), scene.b ? loadBitmap(scene.b, T) : null]);
+  if (ba) upload(shotTex[0], ba, true);
+  if (bb) upload(shotTex[1], bb, true);
+  drawSide(overlay[0], scene.a, T, CAM[scene.a](T));
+  drawSide(overlay[1], scene.b, T, scene.b ? CAM[scene.b](T) : [PAGE.w / 2, PAGE.h / 2, 1]);
+  // the deal's tickets move fast: while they are on screen the top layer is redrawn per camera sample
+  const [d0, d1] = dealWindow();
+  const dealLive = T >= d0 - 0.05 && T <= d1 + 0.05;
+  drawTop(overlay[2], T);
+  for (let k = 0; k < 3; k++) upload(ovTex[k], overlay[k], false);
+
+  const u = progScene.u;
+  gl.useProgram(progScene.p);
+  bindTex(0, shotTex[0]);
+  bindTex(1, shotTex[1]);
+  bindTex(2, ovTex[0]);
+  bindTex(3, ovTex[1]);
+  bindTex(4, ovTex[2]);
+  gl.uniform1i(u.uA, 0);
+  gl.uniform1i(u.uB, 1);
+  gl.uniform1i(u.uOA, 2);
+  gl.uniform1i(u.uOB, 3);
+  gl.uniform1i(u.uTop, 4);
+  gl.uniform2f(u.uRes, W, H);
+  gl.uniform2f(u.uPage, PAGE.w, PAGE.h);
+  gl.uniform1f(u.uS0, S0);
+  gl.uniform1i(u.uHasA, ba ? 1 : 0);
+  gl.uniform1i(u.uHasB, bb ? 1 : 0);
+  gl.uniform3f(u.uFieldA, ...fieldRgb(scene.a));
+  gl.uniform3f(u.uFieldB, ...fieldRgb(scene.b));
+  gl.uniform3f(u.uFillB, ...fieldRgb(scene.b));
+  gl.uniform1f(u.uWeight, weight / CAM_SAMPLES);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.ONE, gl.ONE);
+  for (let k = 0; k < CAM_SAMPLES; k++) {
+    const Tc = T + ((k + 0.5) / CAM_SAMPLES - 0.5) * camSpread;
+    gl.uniform3f(u.uCamA, ...CAM[scene.a](Tc));
+    gl.uniform3f(u.uCamB, ...(scene.b ? CAM[scene.b](Tc) : [PAGE.w / 2, PAGE.h / 2, 1]));
+    if (dealLive && camSpread > 0) {
+      drawTop(overlay[2], Tc);
+      upload(ovTex[2], overlay[2], false);
+      gl.useProgram(progScene.p);
+      bindTex(4, ovTex[2]);
+    }
+    const tr = transition(scene, Tc);
+    gl.uniform1i(u.uMode, tr.mode);
+    gl.uniform4f(u.uP1, ...tr.p1);
+    gl.uniform4f(u.uP2, ...tr.p2);
+    gl.uniform4f(u.uP3, ...tr.p3);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, accFb);
+    gl.viewport(0, 0, W, H);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+  gl.disable(gl.BLEND);
+}
+
+/** Draws output frame k (motion blur: three subframes, four camera samples each; one sharp subframe in transitions). */
+async function renderFrame(k, opts) {
+  PLAY = !!opts?.play;
+  const t = k / FPS;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, accFb);
+  gl.viewport(0, 0, W, H);
+  gl.clearColor(0, 0, 0, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  if (narrowShutter(t)) {
+    await renderSubframe(t, 1, 0);
+  } else {
+    for (let s = 0; s < SUB; s++) await renderSubframe(Math.max(0, t + (s - (SUB - 1) / 2) / SUB_FPS), 1 / SUB, 1 / SUB_FPS);
+  }
+  gl.useProgram(progFinal.p);
+  bindTex(0, accTex);
+  gl.uniform1i(progFinal.u.uAcc, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.viewport(0, 0, W, H);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  gl.finish();
+  return k;
+}
+
+/**
+ * House-rules audit of the drawn layers at reel time T (brief §11.7): every pixel the overlays paint
+ * must be a token colour or an exact blend of two tokens (anti-aliasing, a semi-transparent edge).
+ * The title's photograph is a photo, not a drawn colour, and is left out.
+ */
+function overlayAudit(T) {
+  const scene = sceneAt(T);
+  drawSide(overlay[0], scene.a, T, CAM[scene.a](T));
+  drawSide(overlay[1], scene.b, T, scene.b ? CAM[scene.b](T) : [PAGE.w / 2, PAGE.h / 2, 1]);
+  drawTop(overlay[2], T);
+  const tokens = [...new Set(Object.values(C))].map((h) => hex(h).map((v) => v * 255));
+  const near = (p, q) => Math.max(Math.abs(p[0] - q[0]), Math.abs(p[1] - q[1]), Math.abs(p[2] - q[2]));
+  const onSegment = (p, a, b) => {
+    const d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+    const len = d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+    const t = len ? Math.max(0, Math.min(1, ((p[0] - a[0]) * d[0] + (p[1] - a[1]) * d[1] + (p[2] - a[2]) * d[2]) / len)) : 0;
+    return near(p, [a[0] + d[0] * t, a[1] + d[1] * t, a[2] + d[2] * t]);
+  };
+  /** Distance from p to the triangle a-b-c in RGB (0 inside): a convex blend of three tokens. */
+  const inTriangle = (p, a, b, c) => {
+    const sub = (u, v) => [u[0] - v[0], u[1] - v[1], u[2] - v[2]];
+    const dot = (u, v) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+    const v0 = sub(b, a), v1 = sub(c, a), v2 = sub(p, a);
+    const d00 = dot(v0, v0), d01 = dot(v0, v1), d11 = dot(v1, v1), d20 = dot(v2, v0), d21 = dot(v2, v1);
+    const den = d00 * d11 - d01 * d01;
+    if (!den) return Infinity;
+    const v = (d11 * d20 - d01 * d21) / den, w = (d00 * d21 - d01 * d20) / den, u = 1 - v - w;
+    if (u < -0.01 || v < -0.01 || w < -0.01) return Math.min(onSegment(p, a, b), onSegment(p, b, c), onSegment(p, a, c));
+    return near(p, [a[0] * u + b[0] * v + c[0] * w, a[1] * u + b[1] * v + c[1] * w, a[2] * u + b[2] * v + c[2] * w]);
+  };
+  const out = { T, token: 0, blend: 0, photo: 0, fringe: 0, other: 0, samples: [] };
+  const photo = scene.a === "title" || scene.b === "title" ? PHOTO_CIRCLE : null;
+  for (const cv of overlay) {
+    const d = cv.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, W, H).data;
+    for (let i = 0; i < d.length; i += 4) {
+      const a = d[i + 3];
+      if (!a) continue;
+      const px = (i / 4) % W, py = Math.floor(i / 4 / W);
+      if (photo && Math.hypot(px - (W / 2 + (photo.x - W / 2) * photo.z), py - (H / 2 + (photo.y - H / 2) * photo.z)) < photo.r * photo.z + 2) { out.photo++; continue; }
+      if (a < 40) { out.fringe++; continue; } // too transparent to read back a colour exactly
+      const p = [d[i], d[i + 1], d[i + 2]];
+      const tol = 3 + (255 - a) / 24;
+      if (tokens.some((q) => near(p, q) <= tol)) { out.token++; continue; }
+      let blended = false;
+      for (let x = 0; x < tokens.length && !blended; x++) for (let y = x + 1; y < tokens.length && !blended; y++) if (onSegment(p, tokens[x], tokens[y]) <= tol) blended = true;
+      // where three shapes meet (a rotated ticket's edge over another ticket), anti-aliasing mixes three tokens
+      for (let x = 0; x < tokens.length && !blended; x++)
+        for (let y = x + 1; y < tokens.length && !blended; y++)
+          for (let z = y + 1; z < tokens.length && !blended; z++) if (inTriangle(p, tokens[x], tokens[y], tokens[z]) <= tol) blended = true;
+      if (blended) out.blend++;
+      else {
+        out.other++;
+        if (out.samples.length < 5) out.samples.push([px, py, ...p, a]);
+      }
+    }
+  }
+  return out;
+}
+
+// ───────────────────────────── boot ─────────────────────────────
+async function boot() {
+  const problems = TL.validateTimeline();
+  if (problems.length) throw new Error(problems.join("; "));
+  for (const id of SHOT_IDS) {
+    const res = await fetch(`out/shots/${ASPECT}/${id}/meta.json`);
+    if (!res.ok) throw new Error(`no footage for shot ${id} (${ASPECT}): run capture.mjs`);
+    META[id] = await res.json();
+  }
+  buildCameras();
+  await Promise.all([document.fonts.load(`400 40px ${DISPLAY}`), document.fonts.load(`800 40px ${TEXT}`), document.fonts.load(`700 40px ${TEXT}`)]);
+  if (!document.fonts.check(`400 40px ${DISPLAY}`) || !document.fonts.check(`800 40px ${TEXT}`)) throw new Error("the app's fonts did not load: refusing to render with a fallback face");
+  const recipes = (await (await fetch("fixtures/allRecipes.json")).json()).response;
+  const hero = recipes.find((r) => r.image);
+  const photo = await fetch(`photo?url=${encodeURIComponent(hero.image)}`);
+  if (!photo.ok) throw new Error(`no cached photo for ${hero.image}`);
+  PHOTO = await createImageBitmap(await photo.blob());
+  const bibimbap = recipes.find((r) => /Bibimbap/.test(r.name));
+  DEAL = fitDeal(bibimbap.ingredients);
+  window.renderFrame = renderFrame;
+  window.renderAudio = () => import("./lib/score.js").then((m) => m.renderScore());
+  window.dealHoles = dealHoles;
+  window.overlayAudit = overlayAudit;
+  window.FRAMES = Math.round(DURATION * FPS);
+  window.REEL = { W, H, FPS, ASPECT, fonts: { dela: document.fonts.check(`400 40px ${DISPLAY}`), archivo: document.fonts.check(`800 40px ${TEXT}`) }, deal: { tickets: DEAL.length, height: Math.round(DEAL[0].h), window: dealWindow() }, titleRecipe: hero.name };
+  window.__ready = true;
+}
+boot().catch((e) => {
+  window.__error = String(e.stack || e);
+  console.error(e);
+});
+</script>
+</body>
+</html>

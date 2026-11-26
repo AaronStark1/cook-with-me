@@ -1,0 +1,18 @@
+{
+  "name": "cook-with-me-showreel",
+  "private": true,
+  "type": "module",
+  "description": "Films the running Cook With Me app under virtual time (capture.mjs), composes the 45-second reel (reel.html) and renders it to ../../docs/reel/ in three cuts (16:9 master, README web cut, 9:16 vertical) with Playwright and ffmpeg.",
+  "scripts": {
+    "fixtures": "node fixtures.mjs",
+    "smoke": "node smoke.mjs",
+    "capture": "node capture.mjs",
+    "render": "node render.mjs",
+    "beats": "node render.mjs --beats",
+    "audio": "node render.mjs --audio"
+  },
+  "devDependencies": {
+    "ffmpeg-static": "5.3.0",
+    "playwright-core": "1.64.1"
+  }
+}
